@@ -7,9 +7,10 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { motion } from 'framer-motion';
 
-// Import custom components
+// Import custom components and hooks
 import AppInput from '../../components/common/AppInput';
 import AppButton from '../../components/common/AppButton';
+import { useAuth } from '../../hooks/useAuth'; // Fixed import
 
 // A simple SVG illustration for the side panel
 const LoginIllustration = () => (
@@ -36,18 +37,6 @@ const LoginIllustration = () => (
   </svg>
 );
 
-
-// A placeholder for your auth service
-const authService = {
-  login: async (data) => {
-    console.log('Logging in with:', data);
-    if (data.email === 'fail@test.com') {
-        return Promise.reject({ message: 'Invalid credentials provided.' });
-    }
-    return new Promise(resolve => setTimeout(() => resolve({ success: true, user: { name: 'Mirshad Ali', role: 'SUPER ADMIN' } }), 1000));
-  },
-};
-
 // Validation schema
 const schema = yup.object().shape({
   email: yup.string().email('Must be a valid email').required('Email is required'),
@@ -58,6 +47,7 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth(); // Using the actual AuthContext
 
   const { control, handleSubmit, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
@@ -71,14 +61,28 @@ const LoginPage = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await authService.login(data);
-      if (response.success) {
-        // Here you would typically set the user in your AuthContext
-        // and then navigate to the dashboard.
+      // Using the actual login function from AuthContext
+      const user = await login(data.email, data.password);
+      
+      // Navigate based on user role
+      if (user.role === 'SUPER ADMIN') {
         navigate('/dashboard');
+      } else if (user.role === 'ADMIN') {
+        navigate('/dashboard');
+      } else {
+        navigate('/client-dashboard');
       }
     } catch (err) {
-      setError(err.message || 'An unexpected error occurred.');
+      console.error('Login error:', err);
+      
+      // Handle different types of errors
+      if (err.response && err.response.data && err.response.data.message) {
+        setError(err.response.data.message);
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -123,6 +127,7 @@ const LoginPage = () => {
                         error={!!errors.email}
                         helperText={errors.email?.message}
                         autoFocus
+                        disabled={loading}
                       />
                     )}
                   />
@@ -137,10 +142,15 @@ const LoginPage = () => {
                         type="password"
                         error={!!errors.password}
                         helperText={errors.password?.message}
+                        disabled={loading}
                       />
                     )}
                   />
-                  {error && <Alert severity="error">{error}</Alert>}
+                  {error && (
+                    <Alert severity="error" sx={{ mt: 2 }}>
+                      {error}
+                    </Alert>
+                  )}
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}>
                     <Link component={RouterLink} to="/forgot-password" variant="body2">
                       Forgot password?
@@ -148,19 +158,21 @@ const LoginPage = () => {
                   </Box>
                   <AppButton
                     type="submit"
-                    variant="primary"
                     fullWidth
-                    disabled={loading}
-                    sx={{ py: 1.5 }}
+                    variant="primary"
+                    loading={loading}
+                    sx={{ mt: 3, mb: 2 }}
                   >
                     {loading ? 'Signing In...' : 'Sign In'}
                   </AppButton>
-                  <Typography variant="body2" color="text.secondary" align="center">
-                    Don't have an account?{' '}
-                    <Link component={RouterLink} to="/register" variant="subtitle2">
-                      Sign Up
-                    </Link>
-                  </Typography>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Don't have an account?{' '}
+                      <Link component={RouterLink} to="/register" variant="body2">
+                        Sign up
+                      </Link>
+                    </Typography>
+                  </Box>
                 </Stack>
               </Box>
             </Box>
