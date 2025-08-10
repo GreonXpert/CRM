@@ -1,10 +1,10 @@
-// src/routes/PublicRoute.js
+// src/routes/ProtectedRoute.js
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { Box, CircularProgress } from '@mui/material';
 import { useAuth } from '../hooks/useAuth';
 
-const PublicRoute = ({ redirectTo = '/dashboard' }) => {
+const ProtectedRoute = ({ requiredRoles = [] }) => {
   const { user, loading, isAuthenticated } = useAuth();
 
   // Show loading spinner while checking authentication
@@ -23,13 +23,19 @@ const PublicRoute = ({ redirectTo = '/dashboard' }) => {
     );
   }
 
-  // Redirect authenticated users away from public auth pages
-  if (isAuthenticated && user) {
-    return <Navigate to={redirectTo} replace />;
+  // Redirect to login if not authenticated
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/public/login" replace />;
   }
 
-  // Allow access to public pages
+  // Check role permissions if required
+  if (requiredRoles.length > 0 && !requiredRoles.includes(user.role)) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  // Render protected content
   return <Outlet />;
 };
 
-export default  PublicRoute ;
+export default ProtectedRoute;
+

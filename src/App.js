@@ -1,5 +1,6 @@
-// App.js
+// src/App.js - Fixed Main Entry Point
 import React from 'react';
+import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Global } from '@emotion/react';
@@ -11,12 +12,10 @@ import globalStyles from './assets/styles/globalStyles';
 // Import Context Providers
 import { AuthProvider } from './context/AuthContext';
 import { AppDataProvider } from './context/AppContext';
+import  NotificationProvider  from './components/common/NotificationProvider';
 
 // Import Router
 import AppRouter from './routes/AppRouter';
-
-// Import Global Components
-import NotificationProvider from './components/common/NotificationProvider';
 
 // ==============================================
 // ERROR BOUNDARY COMPONENT
@@ -33,7 +32,6 @@ class AppErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('App Error Boundary caught an error:', error, errorInfo);
-    // Optionally: send to your logging service here
   }
 
   render() {
@@ -64,7 +62,6 @@ class AppErrorBoundary extends React.Component {
           >
             Reload Page
           </button>
-
           {process.env.NODE_ENV === 'development' && (
             <details style={{ marginTop: '20px', textAlign: 'left' }}>
               <summary>Error Details (Development Only)</summary>
@@ -95,15 +92,16 @@ function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <Global styles={globalStyles} />
-
-        {/* Context Providers - Order matters */}
-        <AuthProvider>
-          <AppDataProvider>
-            <NotificationProvider>
-              <AppRouter />
-            </NotificationProvider>
-          </AppDataProvider>
-        </AuthProvider>
+        <BrowserRouter>
+          {/* Context Providers - Order matters */}
+          <AuthProvider>
+            <AppDataProvider>
+              <NotificationProvider>
+                <AppRouter />
+              </NotificationProvider>
+            </AppDataProvider>
+          </AuthProvider>
+        </BrowserRouter>
       </ThemeProvider>
     </AppErrorBoundary>
   );
