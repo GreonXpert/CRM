@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 // Import Custom Components
 import StatCard from '../../components/dashboard/StatCard';
 import AppChart from '../../components/dashboard/AppChart';
-import LeadTable from '../../components/dashboard/LeadTable';
+import LeadTable from '../../components/dashboard/EnhancedLeadTable';
 
 // Import Icons
 import { AddCard, CheckCircle, ThumbDown, TrendingUp, BarChart, PieChart } from '@mui/icons-material';
