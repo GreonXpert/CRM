@@ -15,7 +15,7 @@ import LoginPage from '../pages/auth/LoginPage';
 import RegisterPage from '../pages/auth/RegisterPage';
 
 // Dashboard Pages
-import SuperAdminDashboard from '../pages/dashboard/SuperAdminDashboard';
+import SuperAdminDashboard from '../pages/dashboard/EnhancedSuperAdminDashboard';
 
 // Lead Pages
 import LeadsListPage from '../pages/leads/LeadsListPage';
