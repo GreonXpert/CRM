@@ -1,99 +1,353 @@
 // /src/components/common/AppButton.js
 import React from 'react';
-import { Button } from '@mui/material';
-import { styled, keyframes } from '@mui/material/styles';
+import { Button, CircularProgress, Box } from '@mui/material';
+import { styled } from '@mui/material/styles';
 
-// --- Keyframes for Animations ---
+// ==============================================
+// STYLED COMPONENTS
+// ==============================================
 
-// Shake animation for the danger button
-const shake = keyframes`
-  0% { transform: translate(1px, 1px) rotate(0deg); }
-  10% { transform: translate(-1px, -2px) rotate(-1deg); }
-  20% { transform: translate(-3px, 0px) rotate(1deg); }
-  30% { transform: translate(3px, 2px) rotate(0deg); }
-  40% { transform: translate(1px, -1px) rotate(1deg); }
-  50% { transform: translate(-1px, 2px) rotate(-1deg); }
-  60% { transform: translate(-3px, 1px) rotate(0deg); }
-  70% { transform: translate(3px, 1px) rotate(-1deg); }
-  80% { transform: translate(-1px, -1px) rotate(1deg); }
-  90% { transform: translate(1px, 2px) rotate(0deg); }
-  100% { transform: translate(1px, -2px) rotate(-1deg); }
-`;
-
-// --- Styled Button Component ---
-
-const StyledButton = styled(Button, {
-  shouldForwardProp: (prop) => prop !== 'variant',
-})(({ theme, variant = 'primary' }) => ({
-  padding: '10px 24px',
-  borderRadius: theme.shape.borderRadius,
-  fontWeight: '600',
-  fontSize: '0.9rem',
+const StyledButton = styled(Button)(({ theme, variant: buttonVariant }) => ({
+  borderRadius: 12,
   textTransform: 'none',
-  transition: 'all 0.3s ease-in-out',
+  fontWeight: 600,
+  fontSize: '0.95rem',
+  padding: '12px 32px',
+  minHeight: 48,
+  transition: 'all 0.2s ease-in-out',
+  position: 'relative',
+  overflow: 'hidden',
   
-  // --- Variant Styles ---
-  
-  // 1. Primary Button (Default)
-  ...(variant === 'primary' && {
-    background: `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.primary.light} 90%)`,
-    color: '#fff',
+  // Primary variant
+  ...(buttonVariant === 'primary' && {
+    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+    color: 'white',
     border: 'none',
-    boxShadow: `0 4px 15px 0 rgba(25, 118, 210, 0.4)`,
+    boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
     '&:hover': {
-      transform: 'translateY(-3px)',
-      boxShadow: `0 6px 20px 0 rgba(25, 118, 210, 0.5)`,
+      background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
+      boxShadow: '0 6px 20px rgba(25, 118, 210, 0.4)',
+      transform: 'translateY(-2px)',
+    },
+    '&:active': {
+      transform: 'translateY(0)',
+      boxShadow: '0 2px 8px rgba(25, 118, 210, 0.3)',
+    },
+    '&:disabled': {
+      background: theme.palette.grey[300],
+      color: theme.palette.grey[500],
+      boxShadow: 'none',
+      transform: 'none',
     },
   }),
-
-  // 2. Secondary Button
-  ...(variant === 'secondary' && {
-    color: theme.palette.primary.main,
+  
+  // Secondary variant
+  ...(buttonVariant === 'secondary' && {
     backgroundColor: 'transparent',
+    color: theme.palette.primary.main,
     border: `2px solid ${theme.palette.primary.main}`,
     '&:hover': {
       backgroundColor: theme.palette.primary.main,
-      color: '#fff',
+      color: 'white',
+      transform: 'translateY(-1px)',
+      boxShadow: '0 4px 12px rgba(25, 118, 210, 0.2)',
+    },
+    '&:active': {
+      transform: 'translateY(0)',
+    },
+    '&:disabled': {
+      color: theme.palette.grey[400],
+      borderColor: theme.palette.grey[300],
+      backgroundColor: 'transparent',
     },
   }),
-
-  // 3. Danger Button
-  ...(variant === 'danger' && {
-    backgroundColor: theme.palette.error.main,
-    color: '#fff',
+  
+  // Success variant
+  ...(buttonVariant === 'success' && {
+    background: `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.dark} 100%)`,
+    color: 'white',
+    border: 'none',
+    boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)',
     '&:hover': {
-      backgroundColor: theme.palette.error.dark,
-      animation: `${shake} 0.5s`,
+      background: `linear-gradient(135deg, ${theme.palette.success.dark} 0%, ${theme.palette.success.main} 100%)`,
+      boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)',
+      transform: 'translateY(-2px)',
+    },
+    '&:disabled': {
+      background: theme.palette.grey[300],
+      color: theme.palette.grey[500],
+      boxShadow: 'none',
     },
   }),
-
-  // 4. Glass Button
-  ...(variant === 'glass' && {
-    background: 'rgba(255, 255, 255, 0.15)',
-    backdropFilter: 'blur(10px)',
+  
+  // Error variant
+  ...(buttonVariant === 'error' && {
+    background: `linear-gradient(135deg, ${theme.palette.error.main} 0%, ${theme.palette.error.dark} 100%)`,
+    color: 'white',
+    border: 'none',
+    boxShadow: '0 4px 12px rgba(244, 67, 54, 0.3)',
+    '&:hover': {
+      background: `linear-gradient(135deg, ${theme.palette.error.dark} 0%, ${theme.palette.error.main} 100%)`,
+      boxShadow: '0 6px 20px rgba(244, 67, 54, 0.4)',
+      transform: 'translateY(-2px)',
+    },
+    '&:disabled': {
+      background: theme.palette.grey[300],
+      color: theme.palette.grey[500],
+      boxShadow: 'none',
+    },
+  }),
+  
+  // Warning variant
+  ...(buttonVariant === 'warning' && {
+    background: `linear-gradient(135deg, ${theme.palette.warning.main} 0%, ${theme.palette.warning.dark} 100%)`,
+    color: 'white',
+    border: 'none',
+    boxShadow: '0 4px 12px rgba(255, 152, 0, 0.3)',
+    '&:hover': {
+      background: `linear-gradient(135deg, ${theme.palette.warning.dark} 0%, ${theme.palette.warning.main} 100%)`,
+      boxShadow: '0 6px 20px rgba(255, 152, 0, 0.4)',
+      transform: 'translateY(-2px)',
+    },
+    '&:disabled': {
+      background: theme.palette.grey[300],
+      color: theme.palette.grey[500],
+      boxShadow: 'none',
+    },
+  }),
+  
+  // Ghost variant
+  ...(buttonVariant === 'ghost' && {
+    backgroundColor: 'transparent',
     color: theme.palette.text.primary,
-    border: `1px solid rgba(255, 255, 255, 0.2)`,
-    boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
+    border: 'none',
+    boxShadow: 'none',
     '&:hover': {
-      background: 'rgba(255, 255, 255, 0.25)',
-      borderColor: 'rgba(255, 255, 255, 0.4)',
+      backgroundColor: theme.palette.grey[100],
+      transform: 'translateY(-1px)',
+    },
+    '&:disabled': {
+      color: theme.palette.grey[400],
+      backgroundColor: 'transparent',
     },
   }),
 }));
 
+// ==============================================
+// MAIN COMPONENT
+// ==============================================
+
 /**
- * A versatile, animated button component with multiple variants.
- * @param {string} variant - The style of the button. Can be 'primary', 'secondary', 'danger', or 'glass'.
- * @param {node} children - The content of the button.
- * @param {func} onClick - The function to call when the button is clicked.
- * @param {object} otherProps - Any other props to pass to the MUI Button component.
+ * Enhanced Button Component with loading states and multiple variants
+ * @param {Object} props - Component props
+ * @param {string} props.variant - Button variant (primary, secondary, success, error, warning, ghost)
+ * @param {boolean} props.loading - Whether button is in loading state
+ * @param {string} props.loadingText - Text to show when loading
+ * @param {boolean} props.disabled - Whether button is disabled
+ * @param {string} props.size - Button size (small, medium, large)
+ * @param {boolean} props.fullWidth - Whether button takes full width
+ * @param {React.ReactNode} props.startIcon - Icon to show at start
+ * @param {React.ReactNode} props.endIcon - Icon to show at end
+ * @param {React.ReactNode} props.children - Button content
+ * @param {Function} props.onClick - Click handler
+ * @param {string} props.type - Button type (button, submit, reset)
+ * @param {Object} props.sx - Material-UI sx prop for styling
  */
-const AppButton = ({ variant, children, ...otherProps }) => {
+const AppButton = ({
+  variant = 'primary',
+  loading = false,
+  loadingText = 'Loading...',
+  disabled = false,
+  size = 'medium',
+  fullWidth = false,
+  startIcon,
+  endIcon,
+  children,
+  onClick,
+  type = 'button',
+  sx = {},
+  ...rest
+}) => {
+  // Handle size mapping
+  const sizeProps = {
+    small: { padding: '8px 20px', minHeight: 36, fontSize: '0.875rem' },
+    medium: { padding: '12px 32px', minHeight: 48, fontSize: '0.95rem' },
+    large: { padding: '16px 40px', minHeight: 56, fontSize: '1.1rem' },
+  };
+
+  // Determine if button should be disabled
+  const isDisabled = disabled || loading;
+
+  // Handle click with loading state
+  const handleClick = async (event) => {
+    if (loading || disabled || !onClick) return;
+    
+    try {
+      await onClick(event);
+    } catch (error) {
+      console.error('Button click error:', error);
+    }
+  };
+
   return (
-    <StyledButton variant={variant} {...otherProps}>
-      {children}
+    <StyledButton
+      variant={variant}
+      disabled={isDisabled}
+      fullWidth={fullWidth}
+      type={type}
+      onClick={handleClick}
+      startIcon={loading ? null : startIcon}
+      endIcon={loading ? null : endIcon}
+      sx={{
+        ...sizeProps[size],
+        ...sx,
+      }}
+      {...rest}
+    >
+      {loading ? (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <CircularProgress 
+            size={16} 
+            color="inherit" 
+            sx={{ 
+              color: variant === 'secondary' || variant === 'ghost' 
+                ? 'primary.main' 
+                : 'white' 
+            }} 
+          />
+          {loadingText}
+        </Box>
+      ) : (
+        children
+      )}
     </StyledButton>
   );
 };
+
+// ==============================================
+// BUTTON VARIANTS AS SEPARATE COMPONENTS
+// ==============================================
+
+/**
+ * Primary Button - Main actions
+ */
+export const PrimaryButton = (props) => (
+  <AppButton variant="primary" {...props} />
+);
+
+/**
+ * Secondary Button - Secondary actions
+ */
+export const SecondaryButton = (props) => (
+  <AppButton variant="secondary" {...props} />
+);
+
+/**
+ * Success Button - Positive actions
+ */
+export const SuccessButton = (props) => (
+  <AppButton variant="success" {...props} />
+);
+
+/**
+ * Error Button - Destructive actions
+ */
+export const ErrorButton = (props) => (
+  <AppButton variant="error" {...props} />
+);
+
+/**
+ * Warning Button - Caution actions
+ */
+export const WarningButton = (props) => (
+  <AppButton variant="warning" {...props} />
+);
+
+/**
+ * Ghost Button - Subtle actions
+ */
+export const GhostButton = (props) => (
+  <AppButton variant="ghost" {...props} />
+);
+
+// ==============================================
+// SPECIALIZED BUTTON COMPONENTS
+// ==============================================
+
+/**
+ * Submit Button - For forms
+ */
+export const SubmitButton = ({ children = 'Submit', ...props }) => (
+  <AppButton type="submit" variant="primary" {...props}>
+    {children}
+  </AppButton>
+);
+
+/**
+ * Cancel Button - For cancelling actions
+ */
+export const CancelButton = ({ children = 'Cancel', ...props }) => (
+  <AppButton variant="secondary" {...props}>
+    {children}
+  </AppButton>
+);
+
+/**
+ * Save Button - For saving data
+ */
+export const SaveButton = ({ children = 'Save', ...props }) => (
+  <AppButton variant="success" {...props}>
+    {children}
+  </AppButton>
+);
+
+/**
+ * Delete Button - For destructive actions
+ */
+export const DeleteButton = ({ children = 'Delete', ...props }) => (
+  <AppButton variant="error" {...props}>
+    {children}
+  </AppButton>
+);
+
+/**
+ * Loading Button - Button that shows loading state
+ */
+export const LoadingButton = ({ 
+  isLoading, 
+  loadingText = 'Please wait...', 
+  children, 
+  ...props 
+}) => (
+  <AppButton loading={isLoading} loadingText={loadingText} {...props}>
+    {children}
+  </AppButton>
+);
+
+/**
+ * Icon Button - Button with just an icon
+ */
+export const IconButton = ({ 
+  icon, 
+  tooltip, 
+  variant = 'ghost', 
+  size = 'medium',
+  ...props 
+}) => (
+  <AppButton 
+    variant={variant} 
+    size={size}
+    sx={{ 
+      minWidth: 'auto', 
+      padding: size === 'small' ? 1 : size === 'large' ? 2 : 1.5,
+      aspectRatio: '1',
+      ...props.sx 
+    }}
+    title={tooltip}
+    {...props}
+  >
+    {icon}
+  </AppButton>
+);
 
 export default AppButton;

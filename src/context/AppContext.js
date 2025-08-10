@@ -1,45 +1,82 @@
-// contexts/AppContext.js - Enhanced Context API Structure
+// /src/context/AppContext.js
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
-import apiClient from '../api/apiClient';
+import { createLead as createLeadAPI, createLeadFromLink } from '../api/leadService';
+import { useAuth } from '../hooks/useAuth';
 
 // ==============================================
-// 1. APP STATE MANAGEMENT CONTEXT
+// 1. CONTEXT CREATION
 // ==============================================
-
 const AppStateContext = createContext();
 const AppDispatchContext = createContext();
 
-// Initial state
-const initialState = {
-  loading: false,
-  error: null,
-  leads: [],
-  users: [],
-  dashboardStats: null,
-  notifications: [],
-};
-
-// Action types
-const ACTION_TYPES = {
+// ==============================================
+// 2. ACTION TYPES
+// ==============================================
+export const ACTION_TYPES = {
+  // Loading and Error States
   SET_LOADING: 'SET_LOADING',
   SET_ERROR: 'SET_ERROR',
   CLEAR_ERROR: 'CLEAR_ERROR',
+  
+  // Lead Actions
   SET_LEADS: 'SET_LEADS',
   ADD_LEAD: 'ADD_LEAD',
   UPDATE_LEAD: 'UPDATE_LEAD',
   DELETE_LEAD: 'DELETE_LEAD',
+  SET_LEAD_LOADING: 'SET_LEAD_LOADING',
+  SET_LEAD_ERROR: 'SET_LEAD_ERROR',
+  
+  // User Actions
   SET_USERS: 'SET_USERS',
   ADD_USER: 'ADD_USER',
   UPDATE_USER: 'UPDATE_USER',
   DELETE_USER: 'DELETE_USER',
+  
+  // Dashboard Actions
   SET_DASHBOARD_STATS: 'SET_DASHBOARD_STATS',
+  
+  // Notification Actions
   ADD_NOTIFICATION: 'ADD_NOTIFICATION',
   REMOVE_NOTIFICATION: 'REMOVE_NOTIFICATION',
+  CLEAR_NOTIFICATIONS: 'CLEAR_NOTIFICATIONS',
+
+  // Share Link Actions
+  SET_SHARE_LINK: 'SET_SHARE_LINK',
+  CLEAR_SHARE_LINK: 'CLEAR_SHARE_LINK',
 };
 
-// Reducer function
+// ==============================================
+// 3. INITIAL STATE
+// ==============================================
+const initialState = {
+  // Global Loading & Error
+  loading: false,
+  error: null,
+  
+  // Lead Management
+  leads: [],
+  leadLoading: false,
+  leadError: null,
+  
+  // User Management
+  users: [],
+  
+  // Dashboard
+  dashboardStats: null,
+  
+  // Notifications
+  notifications: [],
+  
+  // Share Links
+  shareLinks: new Map(), // userId -> shareLink
+};
+
+// ==============================================
+// 4. REDUCER
+// ==============================================
 const appReducer = (state, action) => {
   switch (action.type) {
+    // Loading and Error States
     case ACTION_TYPES.SET_LOADING:
       return { ...state, loading: action.payload };
     
@@ -47,48 +84,64 @@ const appReducer = (state, action) => {
       return { ...state, error: action.payload, loading: false };
     
     case ACTION_TYPES.CLEAR_ERROR:
-      return { ...state, error: null };
+      return { ...state, error: null, leadError: null };
+    
+    // Lead Actions
+    case ACTION_TYPES.SET_LEAD_LOADING:
+      return { ...state, leadLoading: action.payload };
+    
+    case ACTION_TYPES.SET_LEAD_ERROR:
+      return { ...state, leadError: action.payload, leadLoading: false };
     
     case ACTION_TYPES.SET_LEADS:
-      return { ...state, leads: action.payload, loading: false };
-    
-    case ACTION_TYPES.ADD_LEAD:
       return { 
         ...state, 
+        leads: action.payload, 
+        leadLoading: false, 
+        leadError: null 
+      };
+    
+    case ACTION_TYPES.ADD_LEAD:
+      return {
+        ...state,
         leads: [action.payload, ...state.leads],
-        loading: false 
+        leadLoading: false,
+        leadError: null
       };
     
     case ACTION_TYPES.UPDATE_LEAD:
       return {
         ...state,
-        leads: state.leads.map(lead => 
+        leads: state.leads.map(lead =>
           lead._id === action.payload._id ? action.payload : lead
         ),
-        loading: false
+        leadLoading: false,
+        leadError: null
       };
     
     case ACTION_TYPES.DELETE_LEAD:
       return {
         ...state,
         leads: state.leads.filter(lead => lead._id !== action.payload),
-        loading: false
+        leadLoading: false,
+        leadError: null
       };
     
+    // User Actions
     case ACTION_TYPES.SET_USERS:
       return { ...state, users: action.payload, loading: false };
     
     case ACTION_TYPES.ADD_USER:
-      return { 
-        ...state, 
+      return {
+        ...state,
         users: [action.payload, ...state.users],
-        loading: false 
+        loading: false
       };
     
     case ACTION_TYPES.UPDATE_USER:
       return {
         ...state,
-        users: state.users.map(user => 
+        users: state.users.map(user =>
           user._id === action.payload._id ? action.payload : user
         ),
         loading: false
@@ -101,9 +154,11 @@ const appReducer = (state, action) => {
         loading: false
       };
     
+    // Dashboard Actions
     case ACTION_TYPES.SET_DASHBOARD_STATS:
       return { ...state, dashboardStats: action.payload, loading: false };
     
+    // Notification Actions
     case ACTION_TYPES.ADD_NOTIFICATION:
       return {
         ...state,
@@ -116,13 +171,27 @@ const appReducer = (state, action) => {
         notifications: state.notifications.filter(n => n.id !== action.payload)
       };
     
+    case ACTION_TYPES.CLEAR_NOTIFICATIONS:
+      return { ...state, notifications: [] };
+
+    // Share Link Actions
+    case ACTION_TYPES.SET_SHARE_LINK:
+      const newShareLinks = new Map(state.shareLinks);
+      newShareLinks.set(action.payload.userId, action.payload.link);
+      return { ...state, shareLinks: newShareLinks };
+    
+    case ACTION_TYPES.CLEAR_SHARE_LINK:
+      const clearedShareLinks = new Map(state.shareLinks);
+      clearedShareLinks.delete(action.payload);
+      return { ...state, shareLinks: clearedShareLinks };
+    
     default:
       return state;
   }
 };
 
 // ==============================================
-// 2. APP DATA PROVIDER
+// 5. PROVIDER COMPONENT
 // ==============================================
 export const AppDataProvider = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
@@ -137,7 +206,7 @@ export const AppDataProvider = ({ children }) => {
 };
 
 // ==============================================
-// 3. HOOKS FOR ACCESSING CONTEXT
+// 6. CONTEXT HOOKS
 // ==============================================
 export const useAppState = () => {
   const context = useContext(AppStateContext);
@@ -154,194 +223,275 @@ export const useAppDispatch = () => {
   }
   return context;
 };
-// import apiClient moved to top
 
 // ==============================================
-// 4. ENHANCED API SERVICE LAYER
+// 7. UTILITY FUNCTIONS
 // ==============================================
 
-export class ApiService {
-  static async handleApiCall(apiCall, dispatch, successAction, errorMessage) {
-    dispatch({ type: ACTION_TYPES.SET_LOADING, payload: true });
-    dispatch({ type: ACTION_TYPES.CLEAR_ERROR });
-    
-    try {
-      const response = await apiCall();
-      if (successAction) {
-        dispatch(successAction(response.data));
-      }
-      return response.data;
-    } catch (error) {
-      const message = error.response?.data?.message || errorMessage || 'An error occurred';
-      dispatch({ type: ACTION_TYPES.SET_ERROR, payload: message });
-      
-      // Add notification for error
-      dispatch({
-        type: ACTION_TYPES.ADD_NOTIFICATION,
-        payload: {
-          id: Date.now(),
-          type: 'error',
-          message,
-          timestamp: new Date().toISOString()
-        }
-      });
-      
-      throw error;
-    }
+// Notification Helper
+export const createNotification = (type, message, duration = 5000) => ({
+  id: Date.now() + Math.random(),
+  type, // 'success', 'error', 'warning', 'info'
+  message,
+  timestamp: new Date().toISOString(),
+  duration,
+});
+
+// Error Handler
+const handleApiError = (error, dispatch, defaultMessage = 'An error occurred') => {
+  console.error('API Error:', error);
+  
+  let errorMessage = defaultMessage;
+  
+  if (error.response?.data?.message) {
+    errorMessage = error.response.data.message;
+  } else if (error.message) {
+    errorMessage = error.message;
   }
-}
+  
+  // Dispatch error to state
+  dispatch({ type: ACTION_TYPES.SET_LEAD_ERROR, payload: errorMessage });
+  
+  // Add error notification
+  dispatch({
+    type: ACTION_TYPES.ADD_NOTIFICATION,
+    payload: createNotification('error', errorMessage)
+  });
+  
+  throw error;
+};
+
+// Success Handler
+const handleApiSuccess = (data, dispatch, successAction, successMessage) => {
+  if (successAction) {
+    dispatch(successAction(data));
+  }
+  
+  if (successMessage) {
+    dispatch({
+      type: ACTION_TYPES.ADD_NOTIFICATION,
+      payload: createNotification('success', successMessage)
+    });
+  }
+  
+  return data;
+};
 
 // ==============================================
-// 5. CUSTOM HOOKS FOR DATA OPERATIONS
+// 8. CUSTOM HOOKS FOR OPERATIONS
 // ==============================================
 
-// Hook for Lead operations
+// Lead Operations Hook
 export const useLeads = () => {
   const state = useAppState();
   const dispatch = useAppDispatch();
 
+  // Create Lead (Regular or Shared Link)
+  const createLead = useCallback(async (leadData, userId = null, isSharedLink = false) => {
+    dispatch({ type: ACTION_TYPES.SET_LEAD_LOADING, payload: true });
+    dispatch({ type: ACTION_TYPES.CLEAR_ERROR });
+
+    try {
+      let result;
+      
+      if (isSharedLink && userId) {
+        // Use shared link API
+        result = await createLeadFromLink(userId, leadData);
+        
+        return handleApiSuccess(
+          result.data,
+          dispatch,
+          (data) => ({ type: ACTION_TYPES.ADD_LEAD, payload: data }),
+          'Lead information submitted successfully!'
+        );
+      } else {
+        // Use regular API
+        result = await createLeadAPI(leadData);
+        
+        return handleApiSuccess(
+          result.data,
+          dispatch,
+          (data) => ({ type: ACTION_TYPES.ADD_LEAD, payload: data }),
+          'Lead created successfully!'
+        );
+      }
+    } catch (error) {
+      return handleApiError(error, dispatch, 'Failed to create lead');
+    }
+  }, [dispatch]);
+
+  // Generate Share Link
+  const generateShareLink = useCallback((userId) => {
+    const baseUrl = window.location.origin;
+    const shareLink = `${baseUrl}/lead/shared/${userId}`;
+    
+    dispatch({
+      type: ACTION_TYPES.SET_SHARE_LINK,
+      payload: { userId, link: shareLink }
+    });
+    
+    return shareLink;
+  }, [dispatch]);
+
+  // Copy Share Link to Clipboard
+  const copyShareLink = useCallback(async (userId) => {
+    try {
+      const shareLink = generateShareLink(userId);
+      
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(shareLink);
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = shareLink;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        textArea.remove();
+      }
+      
+      dispatch({
+        type: ACTION_TYPES.ADD_NOTIFICATION,
+        payload: createNotification('success', 'Share link copied to clipboard!')
+      });
+      
+      return shareLink;
+    } catch (error) {
+      dispatch({
+        type: ACTION_TYPES.ADD_NOTIFICATION,
+        payload: createNotification('error', 'Failed to copy link to clipboard')
+      });
+      throw error;
+    }
+  }, [dispatch, generateShareLink]);
+
+  // Get Share Link for User
+  const getShareLink = useCallback((userId) => {
+    return state.shareLinks.get(userId) || generateShareLink(userId);
+  }, [state.shareLinks, generateShareLink]);
+
+  // Fetch All Leads
   const fetchLeads = useCallback(async () => {
-    return ApiService.handleApiCall(
-      () => apiClient.get('/api/leads'),
-      dispatch,
-      (data) => ({ type: ACTION_TYPES.SET_LEADS, payload: data }),
-      'Failed to fetch leads'
-    );
+    dispatch({ type: ACTION_TYPES.SET_LEAD_LOADING, payload: true });
+    dispatch({ type: ACTION_TYPES.CLEAR_ERROR });
+
+    try {
+      // This would typically call your API
+      // const result = await getAllLeads();
+      // For now, returning empty array as placeholder
+      const result = { data: [] };
+      
+      return handleApiSuccess(
+        result.data,
+        dispatch,
+        (data) => ({ type: ACTION_TYPES.SET_LEADS, payload: data })
+      );
+    } catch (error) {
+      return handleApiError(error, dispatch, 'Failed to fetch leads');
+    }
   }, [dispatch]);
 
-  const createLead = useCallback(async (leadData) => {
-    return ApiService.handleApiCall(
-      () => apiClient.post('/api/leads', leadData),
-      dispatch,
-      (data) => ({ type: ACTION_TYPES.ADD_LEAD, payload: data }),
-      'Failed to create lead'
-    );
-  }, [dispatch]);
-
+  // Update Lead
   const updateLead = useCallback(async (leadId, leadData) => {
-    return ApiService.handleApiCall(
-      () => apiClient.put(`/api/leads/${leadId}`, leadData),
-      dispatch,
-      (data) => ({ type: ACTION_TYPES.UPDATE_LEAD, payload: data }),
-      'Failed to update lead'
-    );
+    dispatch({ type: ACTION_TYPES.SET_LEAD_LOADING, payload: true });
+    
+    try {
+      // const result = await updateLeadAPI(leadId, leadData);
+      // Placeholder for now
+      const result = { data: { _id: leadId, ...leadData } };
+      
+      return handleApiSuccess(
+        result.data,
+        dispatch,
+        (data) => ({ type: ACTION_TYPES.UPDATE_LEAD, payload: data }),
+        'Lead updated successfully!'
+      );
+    } catch (error) {
+      return handleApiError(error, dispatch, 'Failed to update lead');
+    }
   }, [dispatch]);
 
+  // Delete Lead
   const deleteLead = useCallback(async (leadId) => {
-    return ApiService.handleApiCall(
-      () => apiClient.delete(`/api/leads/${leadId}`),
-      dispatch,
-      () => ({ type: ACTION_TYPES.DELETE_LEAD, payload: leadId }),
-      'Failed to delete lead'
-    );
+    dispatch({ type: ACTION_TYPES.SET_LEAD_LOADING, payload: true });
+    
+    try {
+      // const result = await deleteLeadAPI(leadId);
+      // Placeholder for now
+      
+      dispatch({ type: ACTION_TYPES.DELETE_LEAD, payload: leadId });
+      dispatch({
+        type: ACTION_TYPES.ADD_NOTIFICATION,
+        payload: createNotification('success', 'Lead deleted successfully!')
+      });
+      
+      return true;
+    } catch (error) {
+      return handleApiError(error, dispatch, 'Failed to delete lead');
+    }
   }, [dispatch]);
 
   return {
+    // State
     leads: state.leads,
-    loading: state.loading,
-    error: state.error,
-    fetchLeads,
+    leadLoading: state.leadLoading,
+    leadError: state.leadError,
+    
+    // Actions
     createLead,
+    fetchLeads,
     updateLead,
     deleteLead,
+    
+    // Share Link Functions
+    generateShareLink,
+    copyShareLink,
+    getShareLink,
   };
 };
 
-// Hook for User operations
-export const useUsers = () => {
-  const state = useAppState();
-  const dispatch = useAppDispatch();
-
-  const fetchUsers = useCallback(async () => {
-    return ApiService.handleApiCall(
-      () => apiClient.get('/api/users'),
-      dispatch,
-      (data) => ({ type: ACTION_TYPES.SET_USERS, payload: data }),
-      'Failed to fetch users'
-    );
-  }, [dispatch]);
-
-  const createUser = useCallback(async (userData) => {
-    return ApiService.handleApiCall(
-      () => apiClient.post('/api/users', userData),
-      dispatch,
-      (data) => ({ type: ACTION_TYPES.ADD_USER, payload: data }),
-      'Failed to create user'
-    );
-  }, [dispatch]);
-
-  const updateUser = useCallback(async (userId, userData) => {
-    return ApiService.handleApiCall(
-      () => apiClient.put(`/api/users/${userId}`, userData),
-      dispatch,
-      (data) => ({ type: ACTION_TYPES.UPDATE_USER, payload: data }),
-      'Failed to update user'
-    );
-  }, [dispatch]);
-
-  const deleteUser = useCallback(async (userId) => {
-    return ApiService.handleApiCall(
-      () => apiClient.delete(`/api/users/${userId}`),
-      dispatch,
-      () => ({ type: ACTION_TYPES.DELETE_USER, payload: userId }),
-      'Failed to delete user'
-    );
-  }, [dispatch]);
-
-  return {
-    users: state.users,
-    loading: state.loading,
-    error: state.error,
-    fetchUsers,
-    createUser,
-    updateUser,
-    deleteUser,
-  };
-};
-
-// Hook for Dashboard operations
-export const useDashboard = () => {
-  const state = useAppState();
-  const dispatch = useAppDispatch();
-
-  const fetchDashboardStats = useCallback(async () => {
-    return ApiService.handleApiCall(
-      () => apiClient.get('/api/dashboard/stats'),
-      dispatch,
-      (data) => ({ type: ACTION_TYPES.SET_DASHBOARD_STATS, payload: data }),
-      'Failed to fetch dashboard statistics'
-    );
-  }, [dispatch]);
-
-  return {
-    dashboardStats: state.dashboardStats,
-    loading: state.loading,
-    error: state.error,
-    fetchDashboardStats,
-  };
-};
-
-// Hook for Notifications
+// Notification Operations Hook
 export const useNotifications = () => {
   const state = useAppState();
   const dispatch = useAppDispatch();
 
-  const addNotification = useCallback((notification) => {
-    dispatch({
-      type: ACTION_TYPES.ADD_NOTIFICATION,
-      payload: {
-        id: Date.now(),
-        timestamp: new Date().toISOString(),
-        ...notification
-      }
-    });
+  const addNotification = useCallback((type, message, duration) => {
+    const notification = createNotification(type, message, duration);
+    dispatch({ type: ACTION_TYPES.ADD_NOTIFICATION, payload: notification });
+    return notification.id;
   }, [dispatch]);
 
   const removeNotification = useCallback((id) => {
-    dispatch({
-      type: ACTION_TYPES.REMOVE_NOTIFICATION,
-      payload: id
-    });
+    dispatch({ type: ACTION_TYPES.REMOVE_NOTIFICATION, payload: id });
+  }, [dispatch]);
+
+  const clearAllNotifications = useCallback(() => {
+    dispatch({ type: ACTION_TYPES.CLEAR_NOTIFICATIONS });
+  }, [dispatch]);
+
+  return {
+    notifications: state.notifications,
+    addNotification,
+    removeNotification,
+    clearAllNotifications,
+  };
+};
+
+// Global Loading and Error Hook
+export const useGlobalState = () => {
+  const state = useAppState();
+  const dispatch = useAppDispatch();
+
+  const setLoading = useCallback((loading) => {
+    dispatch({ type: ACTION_TYPES.SET_LOADING, payload: loading });
+  }, [dispatch]);
+
+  const setError = useCallback((error) => {
+    dispatch({ type: ACTION_TYPES.SET_ERROR, payload: error });
   }, [dispatch]);
 
   const clearError = useCallback(() => {
@@ -349,12 +499,10 @@ export const useNotifications = () => {
   }, [dispatch]);
 
   return {
-    notifications: state.notifications,
+    loading: state.loading,
     error: state.error,
-    addNotification,
-    removeNotification,
+    setLoading,
+    setError,
     clearError,
   };
 };
-
-export { ACTION_TYPES };

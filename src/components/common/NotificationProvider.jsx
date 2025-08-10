@@ -1,108 +1,276 @@
-// components/common/NotificationProvider.jsx
-import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { Snackbar, Alert, IconButton } from '@mui/material';
-import { Close } from '@mui/icons-material';
+// /src/components/common/NotificationProvider.js
+import React, { useEffect } from 'react';
+import { 
+  Snackbar, 
+  Alert, 
+  AlertTitle,
+  Box,
+  IconButton,
+  Slide,
+  Stack
+} from '@mui/material';
+import { Close, CheckCircle, Error, Warning, Info } from '@mui/icons-material';
+import { useNotifications } from '../../context/AppContext';
 
-const NotificationContext = createContext(null);
-
-export const useNotifications = () => {
-  const ctx = useContext(NotificationContext);
-  if (!ctx) {
-    throw new Error('useNotifications must be used within NotificationProvider');
-  }
-  return ctx;
+// ==============================================
+// SLIDE TRANSITION COMPONENT
+// ==============================================
+const SlideTransition = (props) => {
+  return <Slide {...props} direction="up" />;
 };
 
-function NotificationProvider({ children }) {
-  const [notifications, setNotifications] = useState([]);
-  const timeoutsRef = useRef(new Map());
-  const mountedRef = useRef(true);
+// ==============================================
+// NOTIFICATION ITEM COMPONENT
+// ==============================================
+const NotificationItem = ({ notification, onClose }) => {
+  const { id, type, message, title, duration = 5000 } = notification;
 
+  // Auto-close notification after duration
   useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-      // Clear any pending timeouts on unmount
-      timeoutsRef.current.forEach((t) => clearTimeout(t));
-      timeoutsRef.current.clear();
-    };
-  }, []);
+    if (duration > 0) {
+      const timer = setTimeout(() => {
+        onClose(id);
+      }, duration);
 
-  const removeNotification = useCallback((id) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-    const t = timeoutsRef.current.get(id);
-    if (t) {
-      clearTimeout(t);
-      timeoutsRef.current.delete(id);
+      return () => clearTimeout(timer);
     }
-  }, []);
+  }, [id, duration, onClose]);
 
-  const clearAllNotifications = useCallback(() => {
-    setNotifications([]);
-    timeoutsRef.current.forEach((t) => clearTimeout(t));
-    timeoutsRef.current.clear();
-  }, []);
-
-  const addNotification = useCallback((notification) => {
-    const id = Date.now() + Math.random();
-    const newNotification = {
-      id,
-      type: 'info',            // 'success' | 'info' | 'warning' | 'error'
-      message: '',
-      autoHideDuration: 6000,  // ms
-      ...notification,
+  // Get severity mapping
+  const getSeverity = (type) => {
+    const severityMap = {
+      success: 'success',
+      error: 'error',
+      warning: 'warning',
+      info: 'info',
     };
+    return severityMap[type] || 'info';
+  };
 
-    setNotifications((prev) => [...prev, newNotification]);
-
-    // Auto-remove after duration
-    if (newNotification.autoHideDuration > 0) {
-      const t = setTimeout(() => {
-        if (mountedRef.current) removeNotification(id);
-      }, newNotification.autoHideDuration);
-      timeoutsRef.current.set(id, t);
-    }
-  }, [removeNotification]);
-
-  const contextValue = {
-    notifications,
-    addNotification,
-    removeNotification,
-    clearAllNotifications,
+  // Get icon mapping
+  const getIcon = (type) => {
+    const iconMap = {
+      success: <CheckCircle />,
+      error: <Error />,
+      warning: <Warning />,
+      info: <Info />,
+    };
+    return iconMap[type];
   };
 
   return (
-    <NotificationContext.Provider value={contextValue}>
-      {children}
-
-      {notifications.map((n) => (
-        <Snackbar
-          key={n.id}
-          open
-          autoHideDuration={n.autoHideDuration}
-          onClose={() => removeNotification(n.id)}
-          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-          sx={{ mt: 8 }}
+    <Alert
+      severity={getSeverity(type)}
+      icon={getIcon(type)}
+      action={
+        <IconButton
+          aria-label="close"
+          color="inherit"
+          size="small"
+          onClick={() => onClose(id)}
         >
-          <Alert
-            severity={n.type}
-            variant="filled"
-            action={
-              <IconButton
-                size="small"
-                color="inherit"
-                onClick={() => removeNotification(n.id)}
-                aria-label="close"
-              >
-                <Close fontSize="small" />
-              </IconButton>
-            }
-          >
-            {n.message}
-          </Alert>
-        </Snackbar>
-      ))}
-    </NotificationContext.Provider>
+          <Close fontSize="inherit" />
+        </IconButton>
+      }
+      sx={{
+        mb: 1,
+        borderRadius: 2,
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+        minWidth: 320,
+        maxWidth: 500,
+        '& .MuiAlert-message': {
+          width: '100%',
+          padding: '4px 0',
+        },
+        '& .MuiAlert-action': {
+          alignItems: 'flex-start',
+          paddingTop: '8px',
+        },
+      }}
+    >
+      {title && <AlertTitle sx={{ fontWeight: 600 }}>{title}</AlertTitle>}
+      {message}
+    </Alert>
   );
-}
+};
+
+// ==============================================
+// MAIN NOTIFICATION PROVIDER COMPONENT
+// ==============================================
+const NotificationProvider = () => {
+  const { notifications, removeNotification } = useNotifications();
+
+  // Handle notification close
+  const handleClose = (notificationId) => {
+    removeNotification(notificationId);
+  };
+
+  return (
+    <Box
+      sx={{
+        position: 'fixed',
+        bottom: 24,
+        right: 24,
+        zIndex: 9999,
+        pointerEvents: 'none',
+      }}
+    >
+      <Stack spacing={1} sx={{ pointerEvents: 'auto' }}>
+        {notifications.map((notification) => (
+          <Slide
+            key={notification.id}
+            direction="up"
+            in={true}
+            timeout={300}
+          >
+            <div>
+              <NotificationItem
+                notification={notification}
+                onClose={handleClose}
+              />
+            </div>
+          </Slide>
+        ))}
+      </Stack>
+    </Box>
+  );
+};
+
+// ==============================================
+// NOTIFICATION HOOK FOR EASY USAGE
+// ==============================================
+
+/**
+ * Custom hook for showing notifications easily
+ * @returns {Object} Notification functions
+ */
+export const useNotify = () => {
+  const { addNotification } = useNotifications();
+
+  const notify = {
+    success: (message, title, duration) => 
+      addNotification('success', message, duration, title),
+    
+    error: (message, title, duration) => 
+      addNotification('error', message, duration, title),
+    
+    warning: (message, title, duration) => 
+      addNotification('warning', message, duration, title),
+    
+    info: (message, title, duration) => 
+      addNotification('info', message, duration, title),
+  };
+
+  return notify;
+};
+
+// ==============================================
+// NOTIFICATION HELPER FUNCTIONS
+// ==============================================
+
+/**
+ * Show success notification
+ * @param {Function} addNotification - Add notification function
+ * @param {string} message - Notification message
+ * @param {string} title - Optional title
+ */
+export const showSuccess = (addNotification, message, title) => {
+  addNotification('success', message, 5000, title);
+};
+
+/**
+ * Show error notification
+ * @param {Function} addNotification - Add notification function
+ * @param {string} message - Notification message
+ * @param {string} title - Optional title
+ */
+export const showError = (addNotification, message, title) => {
+  addNotification('error', message, 8000, title); // Longer duration for errors
+};
+
+/**
+ * Show warning notification
+ * @param {Function} addNotification - Add notification function
+ * @param {string} message - Notification message
+ * @param {string} title - Optional title
+ */
+export const showWarning = (addNotification, message, title) => {
+  addNotification('warning', message, 6000, title);
+};
+
+/**
+ * Show info notification
+ * @param {Function} addNotification - Add notification function
+ * @param {string} message - Notification message
+ * @param {string} title - Optional title
+ */
+export const showInfo = (addNotification, message, title) => {
+  addNotification('info', message, 5000, title);
+};
+
+/**
+ * Show API error notification with proper formatting
+ * @param {Function} addNotification - Add notification function
+ * @param {Object} error - Error object from API
+ */
+export const showApiError = (addNotification, error) => {
+  let message = 'An unexpected error occurred';
+  let title = 'Error';
+
+  if (error?.message) {
+    message = error.message;
+  } else if (error?.response?.data?.message) {
+    message = error.response.data.message;
+  }
+
+  // Add status code to title if available
+  if (error?.status) {
+    title = `Error (${error.status})`;
+  }
+
+  addNotification('error', message, 8000, title);
+};
+
+/**
+ * Show form validation error notification
+ * @param {Function} addNotification - Add notification function
+ * @param {Object} errors - Form validation errors
+ */
+export const showValidationError = (addNotification, errors) => {
+  const errorMessages = Object.values(errors)
+    .map(error => error.message)
+    .filter(Boolean)
+    .join(', ');
+
+  if (errorMessages) {
+    addNotification('error', errorMessages, 6000, 'Validation Error');
+  }
+};
+
+/**
+ * Show network error notification
+ * @param {Function} addNotification - Add notification function
+ */
+export const showNetworkError = (addNotification) => {
+  addNotification(
+    'error', 
+    'Please check your internet connection and try again.',
+    8000,
+    'Network Error'
+  );
+};
+
+/**
+ * Show unauthorized error notification
+ * @param {Function} addNotification - Add notification function
+ */
+export const showUnauthorizedError = (addNotification) => {
+  addNotification(
+    'error', 
+    'Your session has expired. Please log in again.',
+    8000,
+    'Session Expired'
+  );
+};
 
 export default NotificationProvider;
