@@ -1,7 +1,7 @@
 // /src/context/AppContext.js
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
 import { createLead as createLeadAPI, createLeadFromLink } from '../api/leadService';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../hooks/useAuth'; // (import kept; safe if unused)
 
 // ==============================================
 // 1. CONTEXT CREATION
@@ -175,15 +175,17 @@ const appReducer = (state, action) => {
       return { ...state, notifications: [] };
 
     // Share Link Actions
-    case ACTION_TYPES.SET_SHARE_LINK:
+    case ACTION_TYPES.SET_SHARE_LINK: {
       const newShareLinks = new Map(state.shareLinks);
       newShareLinks.set(action.payload.userId, action.payload.link);
       return { ...state, shareLinks: newShareLinks };
+    }
     
-    case ACTION_TYPES.CLEAR_SHARE_LINK:
+    case ACTION_TYPES.CLEAR_SHARE_LINK: {
       const clearedShareLinks = new Map(state.shareLinks);
       clearedShareLinks.delete(action.payload);
       return { ...state, shareLinks: clearedShareLinks };
+    }
     
     default:
       return state;
@@ -225,10 +227,10 @@ export const useAppDispatch = () => {
 };
 
 // ==============================================
-// 7. UTILITY FUNCTIONS
+// 7. UTILITY FUNCTIONS (FIRST SET)
 // ==============================================
 
-// Notification Helper
+// Notification Helper (first version)
 export const createNotification = (type, message, duration = 5000) => ({
   id: Date.now() + Math.random(),
   type, // 'success', 'error', 'warning', 'info'
@@ -380,9 +382,7 @@ export const useLeads = () => {
     dispatch({ type: ACTION_TYPES.CLEAR_ERROR });
 
     try {
-      // This would typically call your API
-      // const result = await getAllLeads();
-      // For now, returning empty array as placeholder
+      // Placeholder for now
       const result = { data: [] };
       
       return handleApiSuccess(
@@ -400,7 +400,6 @@ export const useLeads = () => {
     dispatch({ type: ACTION_TYPES.SET_LEAD_LOADING, payload: true });
     
     try {
-      // const result = await updateLeadAPI(leadId, leadData);
       // Placeholder for now
       const result = { data: { _id: leadId, ...leadData } };
       
@@ -420,9 +419,7 @@ export const useLeads = () => {
     dispatch({ type: ACTION_TYPES.SET_LEAD_LOADING, payload: true });
     
     try {
-      // const result = await deleteLeadAPI(leadId);
       // Placeholder for now
-      
       dispatch({ type: ACTION_TYPES.DELETE_LEAD, payload: leadId });
       dispatch({
         type: ACTION_TYPES.ADD_NOTIFICATION,
@@ -454,7 +451,7 @@ export const useLeads = () => {
   };
 };
 
-// Notification Operations Hook
+// Notification Operations Hook (first version)
 export const useNotifications = () => {
   const state = useAppState();
   const dispatch = useAppDispatch();
@@ -481,7 +478,7 @@ export const useNotifications = () => {
   };
 };
 
-// Global Loading and Error Hook
+// Global Loading and Error Hook (first version)
 export const useGlobalState = () => {
   const state = useAppState();
   const dispatch = useAppDispatch();
@@ -505,4 +502,210 @@ export const useGlobalState = () => {
     setError,
     clearError,
   };
+};
+
+// ==============================================
+// DASHBOARD HOOK
+// ==============================================
+export const useDashboard = () => {
+  const state = useAppState();
+  const dispatch = useAppDispatch();
+
+  const fetchDashboardStats = useCallback(async () => {
+    dispatch({ type: ACTION_TYPES.SET_LOADING, payload: true });
+    try {
+      // Replace with your actual API endpoint
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:7736/api'}/dashboard/stats`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      dispatch({ type: ACTION_TYPES.SET_DASHBOARD_STATS, payload: data });
+      
+      return data;
+    } catch (error) {
+      console.error('Dashboard stats fetch error:', error);
+      dispatch({ type: ACTION_TYPES.SET_ERROR, payload: error.message });
+      throw error;
+    } finally {
+      dispatch({ type: ACTION_TYPES.SET_LOADING, payload: false });
+    }
+  }, [dispatch]);
+
+  const refreshDashboard = useCallback(() => {
+    return fetchDashboardStats();
+  }, [fetchDashboardStats]);
+
+  return {
+    dashboardStats: state.dashboardStats,
+    loading: state.loading,
+    error: state.error,
+    fetchDashboardStats,
+    refreshDashboard,
+  };
+};
+
+// ==============================================
+// ENHANCED GLOBAL STATE HOOK (Optional)
+// (Renamed to avoid duplicate export name)
+// ==============================================
+export const useGlobalStateEx = () => {
+  const state = useAppState();
+  const dispatch = useAppDispatch();
+
+  const setGlobalLoading = useCallback((loading) => {
+    dispatch({ type: ACTION_TYPES.SET_LOADING, payload: loading });
+  }, [dispatch]);
+
+  const setGlobalError = useCallback((error) => {
+    dispatch({ type: ACTION_TYPES.SET_ERROR, payload: error });
+  }, [dispatch]);
+
+  const clearGlobalError = useCallback(() => {
+    dispatch({ type: ACTION_TYPES.CLEAR_ERROR });
+  }, [dispatch]);
+
+  return {
+    ...state,
+    setGlobalLoading,
+    setGlobalError,
+    clearGlobalError,
+  };
+};
+
+// ==============================================
+// UTILITY HOOK FOR NOTIFICATIONS (Enhanced)
+// (Renamed helpers to avoid collisions)
+// ==============================================
+
+// Enhanced Notification Helper (second version)
+export const createNotificationEx = (message, type = 'info', duration = 5000) => {
+  return {
+    id: Date.now() + Math.random(),
+    message,
+    type, // 'success', 'error', 'warning', 'info'
+    duration,
+    timestamp: new Date().toISOString(),
+  };
+};
+
+// Enhanced notifications hook with auto-remove (second version)
+export const useNotificationsEx = () => {
+  const state = useAppState();
+  const dispatch = useAppDispatch();
+
+  const addNotification = useCallback((notification) => {
+    const fullNotification = typeof notification === 'string' 
+      ? createNotificationEx(notification)
+      : { ...createNotificationEx(''), ...notification };
+
+    dispatch({ 
+      type: ACTION_TYPES.ADD_NOTIFICATION, 
+      payload: fullNotification 
+    });
+
+    // Auto-remove notification after specified duration
+    if (fullNotification.duration > 0) {
+      setTimeout(() => {
+        dispatch({ 
+          type: ACTION_TYPES.REMOVE_NOTIFICATION, 
+          payload: fullNotification.id 
+        });
+      }, fullNotification.duration);
+    }
+
+    return fullNotification.id;
+  }, [dispatch]);
+
+  const removeNotification = useCallback((id) => {
+    dispatch({ type: ACTION_TYPES.REMOVE_NOTIFICATION, payload: id });
+  }, [dispatch]);
+
+  const clearAllNotifications = useCallback(() => {
+    dispatch({ type: ACTION_TYPES.CLEAR_NOTIFICATIONS });
+  }, [dispatch]);
+
+  // Convenience methods
+  const showSuccess = useCallback((message, duration) => {
+    return addNotification({ message, type: 'success', duration });
+  }, [addNotification]);
+
+  const showError = useCallback((message, duration) => {
+    return addNotification({ message, type: 'error', duration });
+  }, [addNotification]);
+
+  const showWarning = useCallback((message, duration) => {
+    return addNotification({ message, type: 'warning', duration });
+  }, [addNotification]);
+
+  const showInfo = useCallback((message, duration) => {
+    return addNotification({ message, type: 'info', duration });
+  }, [addNotification]);
+
+  return {
+    notifications: state.notifications,
+    addNotification,
+    removeNotification,
+    clearAllNotifications,
+    showSuccess,
+    showError,
+    showWarning,
+    showInfo,
+  };
+};
+
+// ==============================================
+// MOCK DATA SERVICE (Temporary - Remove in Production)
+// ==============================================
+export const MockDataService = {
+  getDashboardStats: () => Promise.resolve({
+    data: {
+      totalLeads: 150,
+      pendingLeads: 25,
+      approvedLeads: 100,
+      rejectedLeads: 25,
+      conversionRate: 66.7,
+      monthlyGrowth: 12.5,
+      recentActivity: [
+        { id: 1, action: 'New lead created', timestamp: new Date() },
+        { id: 2, action: 'Lead approved', timestamp: new Date() },
+      ]
+    }
+  }),
+
+  getRecentLeads: () => Promise.resolve({
+    data: [
+      {
+        _id: '1',
+        customerName: 'John Doe',
+        mobileNumber: '9876543210',
+        panCard: 'ABCPD1234E',
+        preferredBank: 'HDFC Bank',
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      },
+      // Add more mock data as needed
+    ]
+  }),
+};
+
+// ==============================================
+// ERROR BOUNDARY CONTEXT (Optional Enhancement)
+// ==============================================
+export const ErrorBoundaryContext = createContext();
+
+export const useErrorBoundary = () => {
+  const context = useContext(ErrorBoundaryContext);
+  if (!context) {
+    throw new Error('useErrorBoundary must be used within ErrorBoundaryProvider');
+  }
+  return context;
 };

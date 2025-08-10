@@ -1,244 +1,191 @@
-// /src/routes/AppRouter.js
-import React, { Suspense } from 'react';
+// src/routes/AppRouter.js
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Box, CircularProgress, Typography } from '@mui/material';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 
-// Import Hooks
-import { useAuth } from '../hooks/useAuth';
+// Context Providers
+import { AppDataProvider } from '../context/AppContext';
 
-// Import Route Guards
-import PrivateRoute from './PrivateRoute';
-import PublicRoute from './PublicRoute';
-
-// Import Layout Components
+// Layouts
 import MainLayout from '../layouts/MainLayout';
 import PublicLayout from '../layouts/PublicLayout';
 
-// Import Pages - Lazy Loading for Better Performance
-const LoginPage = React.lazy(() => import('../pages/auth/LoginPage'));
-const RegisterPage = React.lazy(() => import('../pages/auth/RegisterPage'));
-const ForgotPasswordPage = React.lazy(() => import('../pages/auth/ForgotPasswordPage'));
+// Pages - Dashboard
+import SuperAdminDashboard from '../pages/dashboard/SuperAdminDashboard';
 
-// Dashboard Pages
-const SuperAdminDashboard = React.lazy(() => import('../pages/dashboard/SuperAdminDashboard'));
-const AdminDashboard = React.lazy(() => import('../pages/dashboard/AdminDashboard'));
+// Pages - Authentication (assuming you have these)
+// import LoginPage from '../pages/auth/LoginPage';
+// import RegisterPage from '../pages/auth/RegisterPage';
 
-// Lead Pages
-const AddLeadPage = React.lazy(() => import('../pages/leads/AddLeadPage'));
-const LeadsListPage = React.lazy(() => import('../pages/leads/LeadsListPage'));
-const LeadDetailsPage = React.lazy(() => import('../pages/leads/LeadDetailsPage'));
-const SharedLeadFormPage = React.lazy(() => import('../pages/leads/SharedLeadFormPage'));
+// Pages - Leads
+import LeadsListPage from '../pages/leads/LeadsListPage';
+import LeadDetailsPage from '../pages/leads/LeadDetailsPage';
 
-// User Management Pages
-const UsersListPage = React.lazy(() => import('../pages/users/UsersListPage'));
-const AddUserPage = React.lazy(() => import('../pages/users/AddUserPage'));
-const UserDetailsPage = React.lazy(() => import('../pages/users/UserDetailsPage'));
+// Pages - Users
+import UsersListPage from '../pages/users/UsersListPage';
+import AddUserPage from '../pages/users/AddUserPage';
+import UserDetailsPage from '../pages/users/UserDetailsPage';
 
-// Report Pages
-const ReportsPage = React.lazy(() => import('../pages/reports/ReportsPage'));
+// Pages - Other
+import ReportsPage from '../pages/reports/ReportsPage';
+import ProfilePage from '../pages/profile/ProfilePage';
+import SettingsPage from '../pages/settings/SettingsPage';
 
-// Other Pages
-const ProfilePage = React.lazy(() => import('../pages/profile/ProfilePage'));
-const SettingsPage = React.lazy(() => import('../pages/settings/SettingsPage'));
-const NotFoundPage = React.lazy(() => import('../pages/errors/NotFoundPage'));
-const UnauthorizedPage = React.lazy(() => import('../pages/errors/UnauthorizedPage'));
-const ThankYouPage = React.lazy(() => import('../pages/shared/ThankYouPage'));
+// Error Pages
+import NotFoundPage from '../pages/errors/NotFoundPage';
+import UnauthorizedPage from '../pages/errors/UnauthorizedPage';
 
-// ==============================================
-// LOADING COMPONENT
-// ==============================================
-const PageLoader = ({ message = 'Loading...' }) => (
-  <Box
-    sx={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      height: '100vh',
-      gap: 2,
-    }}
-  >
-    <CircularProgress size={48} />
-    <Typography variant="h6" color="text.secondary">
-      {message}
-    </Typography>
-  </Box>
-);
+// Create Material-UI theme
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#2e7d32', // Green theme for GreonXpert
+      light: '#60ad5e',
+      dark: '#005005',
+    },
+    secondary: {
+      main: '#1976d2',
+    },
+    background: {
+      default: '#f5f5f5',
+    },
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h4: {
+      fontWeight: 600,
+    },
+    h6: {
+      fontWeight: 600,
+    },
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          borderRadius: 8,
+        },
+      },
+    },
+  },
+});
 
-// ==============================================
-// DASHBOARD ROUTE COMPONENT
-// ==============================================
-const DashboardRoute = () => {
-  const { user } = useAuth();
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const isAuthenticated = localStorage.getItem('authToken');
   
-  // Redirect to appropriate dashboard based on role
-  if (user?.role === 'SUPER ADMIN') {
-    return <SuperAdminDashboard />;
-  } else if (user?.role === 'ADMIN') {
-    return <AdminDashboard />;
-  } else {
-    // Default to admin dashboard for other roles
-    return <AdminDashboard />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
   }
+  
+  return children;
 };
 
-// ==============================================
-// MAIN ROUTER COMPONENT
-// ==============================================
+// Public Route Component (redirects if already authenticated)
+const PublicRoute = ({ children }) => {
+  const isAuthenticated = localStorage.getItem('authToken');
+  
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return children;
+};
+
+// Temporary Login Component (replace with your actual login component)
+const TemporaryLoginPage = () => {
+  const handleLogin = () => {
+    // Mock login - replace with actual authentication
+    localStorage.setItem('authToken', 'mock-token');
+    window.location.href = '/dashboard';
+  };
+
+  return (
+    <div style={{ 
+      display: 'flex', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      height: '100vh',
+      flexDirection: 'column',
+      gap: '20px'
+    }}>
+      <h2>GreonXpert Login</h2>
+      <button onClick={handleLogin} style={{ 
+        padding: '10px 20px', 
+        backgroundColor: '#2e7d32', 
+        color: 'white', 
+        border: 'none', 
+        borderRadius: '4px',
+        cursor: 'pointer'
+      }}>
+        Mock Login (Development)
+      </button>
+    </div>
+  );
+};
+
 const AppRouter = () => {
   return (
-    <Router>
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          {/* Public Routes - No Authentication Required */}
-          <Route element={<PublicRoute />}>
-            <Route element={<PublicLayout />}>
-              {/* Auth Routes */}
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-              
-              {/* Shared Lead Form - Public Access */}
-              <Route 
-                path="/lead/shared/:userId" 
-                element={
-                  <Suspense fallback={<PageLoader message="Loading form..." />}>
-                    <SharedLeadFormPage />
-                  </Suspense>
-                } 
-              />
-              
-              {/* Thank You Page */}
-              <Route path="/thank-you" element={<ThankYouPage />} />
-              
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AppDataProvider>
+        <Router>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/login" element={
+              <PublicRoute>
+                <PublicLayout>
+                  <TemporaryLoginPage />
+                </PublicLayout>
+              </PublicRoute>
+            } />
+
+            {/* Protected Routes */}
+            <Route path="/" element={
+              <ProtectedRoute>
+                <MainLayout />
+              </ProtectedRoute>
+            }>
+              {/* Dashboard */}
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<SuperAdminDashboard />} />
+
+              {/* Leads Management */}
+              <Route path="leads" element={<LeadsListPage />} />
+              <Route path="leads/:id" element={<LeadDetailsPage />} />
+              <Route path="leads/create" element={<div>Create Lead Page - TODO</div>} />
+              <Route path="leads/:id/edit" element={<div>Edit Lead Page - TODO</div>} />
+
+              {/* Users Management */}
+              <Route path="users" element={<UsersListPage />} />
+              <Route path="users/create" element={<AddUserPage />} />
+              <Route path="users/:id" element={<UserDetailsPage />} />
+              <Route path="users/:id/edit" element={<div>Edit User Page - TODO</div>} />
+
+              {/* Other Pages */}
+              <Route path="reports" element={<ReportsPage />} />
+              <Route path="profile" element={<ProfilePage />} />
+              <Route path="settings" element={<SettingsPage />} />
+
               {/* Error Pages */}
-              <Route path="/unauthorized" element={<UnauthorizedPage />} />
+              <Route path="unauthorized" element={<UnauthorizedPage />} />
             </Route>
-          </Route>
 
-          {/* Private Routes - Authentication Required */}
-          <Route element={<PrivateRoute />}>
-            <Route element={<MainLayout />}>
-              {/* Dashboard Routes */}
-              <Route 
-                path="/dashboard" 
-                element={
-                  <Suspense fallback={<PageLoader message="Loading dashboard..." />}>
-                    <DashboardRoute />
-                  </Suspense>
-                } 
-              />
-
-              {/* Lead Management Routes */}
-              <Route path="/leads">
-                <Route 
-                  index 
-                  element={
-                    <Suspense fallback={<PageLoader message="Loading leads..." />}>
-                      <LeadsListPage />
-                    </Suspense>
-                  } 
-                />
-                <Route 
-                  path="add" 
-                  element={
-                    <PrivateRoute roles={['SUPER ADMIN', 'ADMIN']}>
-                      <Suspense fallback={<PageLoader message="Loading form..." />}>
-                        <AddLeadPage />
-                      </Suspense>
-                    </PrivateRoute>
-                  } 
-                />
-                <Route 
-                  path=":leadId" 
-                  element={
-                    <Suspense fallback={<PageLoader message="Loading lead details..." />}>
-                      <LeadDetailsPage />
-                    </Suspense>
-                  } 
-                />
-              </Route>
-
-              {/* User Management Routes - Super Admin Only */}
-              <Route element={<PrivateRoute roles={['SUPER ADMIN']} />}>
-                <Route path="/users">
-                  <Route 
-                    index 
-                    element={
-                      <Suspense fallback={<PageLoader message="Loading users..." />}>
-                        <UsersListPage />
-                      </Suspense>
-                    } 
-                  />
-                  <Route 
-                    path="add" 
-                    element={
-                      <Suspense fallback={<PageLoader message="Loading form..." />}>
-                        <AddUserPage />
-                      </Suspense>
-                    } 
-                  />
-                  <Route 
-                    path=":userId" 
-                    element={
-                      <Suspense fallback={<PageLoader message="Loading user details..." />}>
-                        <UserDetailsPage />
-                      </Suspense>
-                    } 
-                  />
-                </Route>
-              </Route>
-
-              {/* Reports Routes - Admin and Super Admin */}
-              <Route element={<PrivateRoute roles={['SUPER ADMIN', 'ADMIN']} />}>
-                <Route 
-                  path="/reports" 
-                  element={
-                    <Suspense fallback={<PageLoader message="Loading reports..." />}>
-                      <ReportsPage />
-                    </Suspense>
-                  } 
-                />
-              </Route>
-
-              {/* Profile and Settings - All Authenticated Users */}
-              <Route 
-                path="/profile" 
-                element={
-                  <Suspense fallback={<PageLoader message="Loading profile..." />}>
-                    <ProfilePage />
-                  </Suspense>
-                } 
-              />
-              <Route 
-                path="/settings" 
-                element={
-                  <Suspense fallback={<PageLoader message="Loading settings..." />}>
-                    <SettingsPage />
-                  </Suspense>
-                } 
-              />
-            </Route>
-          </Route>
-
-          {/* Root Redirect */}
-          <Route 
-            path="/" 
-            element={<Navigate to="/dashboard" replace />} 
-          />
-
-          {/* Catch-all Route - 404 Page */}
-          <Route 
-            path="*" 
-            element={
-              <Suspense fallback={<PageLoader />}>
-                <NotFoundPage />
-              </Suspense>
-            } 
-          />
-        </Routes>
-      </Suspense>
-    </Router>
+            {/* Fallback Route */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Router>
+      </AppDataProvider>
+    </ThemeProvider>
   );
 };
 
