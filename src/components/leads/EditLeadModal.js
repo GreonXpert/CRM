@@ -8,98 +8,145 @@ import {
   Button,
   TextField,
   Grid,
-  FormControl,
-  InputLabel,
   Select,
   MenuItem,
+  FormControl,
+  InputLabel,
   CircularProgress,
-  FormHelperText,
 } from '@mui/material';
+import { useUpdateLeadMutation } from '../../store/api/leadApi';
 
-const EditLeadModal = ({ open, onClose, lead, onSave, isUpdating }) => {
-  const [formData, setFormData] = useState(lead);
-  const [errors, setErrors] = useState({});
+const EditLeadModal = ({ open, onClose, lead }) => {
+  const [formData, setFormData] = useState({});
+  const [updateLead, { isLoading }] = useUpdateLeadMutation();
 
   useEffect(() => {
-    // When a new lead is passed in, update the form data
     if (lead) {
-      setFormData(lead);
+      setFormData({
+        id: lead._id,
+        customerName: lead.customerName || '',
+        mobileNumber: lead.mobileNumber || '',
+        panCard: lead.panCard || '',
+        aadharNumber: lead.aadharNumber || '',
+        employmentType: lead.employmentType || 'Salaried',
+        monthlySalary: lead.monthlySalary || '',
+        preferredBank: lead.preferredBank || '',
+        status: lead.status || 'New',
+      });
     }
   }, [lead]);
-
-  // Return null if the dialog is not open or there's no lead data
-  if (!open || !formData) return null;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const validate = () => {
-    const newErrors = {};
-    if (formData.status === 'Rejected' && !formData.rejectionReason) {
-      newErrors.rejectionReason = 'Rejection reason is required when status is Rejected.';
+  const handleSubmit = async () => {
+    try {
+      await updateLead(formData).unwrap();
+      onClose(true); // Pass true to indicate success
+    } catch (error) {
+      console.error('Failed to update lead:', error);
+      onClose(false); // Pass false to indicate failure
     }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = () => {
-    if (validate()) {
-      onSave(formData);
-    }
-  };
+  if (!lead) return null;
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-      <DialogTitle sx={{ fontWeight: 700 }}>Edit Lead</DialogTitle>
-      <DialogContent dividers>
-        <Grid container spacing={2} sx={{ pt: 1 }}>
-          <Grid item xs={12} sm={6}>
-            <TextField label="Customer Name" value={formData.customerName} fullWidth disabled />
+    <Dialog open={open} onClose={() => onClose(false)} fullWidth maxWidth="sm">
+      <DialogTitle>Edit Lead</DialogTitle>
+      <DialogContent>
+        <Grid container spacing={2} sx={{ mt: 1 }}>
+          <Grid item xs={12}>
+            <TextField
+              name="customerName"
+              label="Customer Name"
+              value={formData.customerName}
+              onChange={handleChange}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              name="mobileNumber"
+              label="Mobile Number"
+              value={formData.mobileNumber}
+              onChange={handleChange}
+              fullWidth
+            />
           </Grid>
           <Grid item xs={12} sm={6}>
-            <TextField label="Mobile Number" value={formData.mobileNumber} fullWidth disabled />
+            <TextField
+              name="panCard"
+              label="PAN Card"
+              value={formData.panCard}
+              onChange={handleChange}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              name="aadharNumber"
+              label="Aadhar Number"
+              value={formData.aadharNumber}
+              onChange={handleChange}
+              fullWidth
+            />
           </Grid>
           <Grid item xs={12} sm={6}>
             <FormControl fullWidth>
+              <InputLabel>Employment Type</InputLabel>
+              <Select
+                name="employmentType"
+                value={formData.employmentType}
+                onChange={handleChange}
+              >
+                <MenuItem value="Salaried">Salaried</MenuItem>
+                <MenuItem value="Self-Employed">Self-Employed</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              name="monthlySalary"
+              label="Monthly Salary"
+              type="number"
+              value={formData.monthlySalary}
+              onChange={handleChange}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              name="preferredBank"
+              label="Preferred Bank (Optional)"
+              value={formData.preferredBank}
+              onChange={handleChange}
+              fullWidth
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <FormControl fullWidth>
               <InputLabel>Status</InputLabel>
-              <Select name="status" value={formData.status} onChange={handleChange} label="Status">
+              <Select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+              >
                 <MenuItem value="New">New</MenuItem>
-                <MenuItem value="Application Collected">Application Collected</MenuItem>
-                <MenuItem value="Verification Pending">Verification Pending</MenuItem>
+                <MenuItem value="Follow-up">Follow-up</MenuItem>
                 <MenuItem value="Approved">Approved</MenuItem>
                 <MenuItem value="Rejected">Rejected</MenuItem>
               </Select>
             </FormControl>
           </Grid>
-          {formData.status === 'Rejected' && (
-            <>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth error={!!errors.rejectionReason}>
-                  <InputLabel>Rejection Reason</InputLabel>
-                  <Select name="rejectionReason" value={formData.rejectionReason || ''} onChange={handleChange} label="Rejection Reason">
-                    <MenuItem value="CIBIL Issue">CIBIL Issue</MenuItem>
-                    <MenuItem value="Low Income">Low Income</MenuItem>
-                    <MenuItem value="Documentation Missing">Documentation Missing</MenuItem>
-                    <MenuItem value="Not Interested">Not Interested</MenuItem>
-                    <MenuItem value="Poor Lead">Poor Lead</MenuItem>
-                    <MenuItem value="Other">Other</MenuItem>
-                  </Select>
-                  {errors.rejectionReason && <FormHelperText>{errors.rejectionReason}</FormHelperText>}
-                </FormControl>
-              </Grid>
-              <Grid item xs={12}>
-                <TextField name="rejectionNotes" label="Rejection Notes" value={formData.rejectionNotes || ''} onChange={handleChange} fullWidth multiline rows={3} />
-              </Grid>
-            </>
-          )}
         </Grid>
       </DialogContent>
-      <DialogActions sx={{ p: 2 }}>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSave} variant="contained" disabled={isUpdating}>
-          {isUpdating ? <CircularProgress size={24} /> : 'Save Changes'}
+      <DialogActions>
+        <Button onClick={() => onClose(false)}>Cancel</Button>
+        <Button onClick={handleSubmit} variant="contained" disabled={isLoading}>
+          {isLoading ? <CircularProgress size={24} /> : 'Save'}
         </Button>
       </DialogActions>
     </Dialog>

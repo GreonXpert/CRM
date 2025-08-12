@@ -56,6 +56,16 @@ const theme = createTheme({
       dark: '#1d4ed8',
     },
   },
+  // Add custom gradients
+  gradients: {
+    primary: 'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)',
+    secondary: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+    success: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
+    warning: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+    info: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+    rainbow: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 50%, #10b981 100%)',
+    glass: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
+  },
   typography: {
     fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
     h1: {

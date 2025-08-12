@@ -10,11 +10,174 @@ import {
   Grid,
   Box,
   Chip,
+  Card,
+  CardContent,
+  Divider,
+  IconButton,
+  Paper,
+  Avatar,
+  Fade,
+  Tooltip,
 } from '@mui/material';
-import { Print, GetApp } from '@mui/icons-material';
+import {
+  Print,
+  GetApp,
+  Close as CloseIcon,
+  Person,
+  Phone,
+  CreditCard,
+  Fingerprint,
+  Work,
+  AttachMoney,
+  AccountBalance,
+  CalendarToday,
+  Badge,
+  TrendingUp,
+  PersonAdd,
+} from '@mui/icons-material';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { styled } from '@mui/material/styles';
+
+// Styled Components
+const StyledDialog = styled(Dialog)(({ theme }) => ({
+  '& .MuiDialog-paper': {
+    borderRadius: 20,
+    boxShadow: '0 24px 48px rgba(0, 0, 0, 0.15)',
+    overflow: 'visible',
+    background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+    maxWidth: 700,
+  },
+}));
+
+const StyledDialogTitle = styled(DialogTitle)(({ theme }) => ({
+  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+  color: 'white',
+  padding: theme.spacing(3),
+  position: 'relative',
+  '& .MuiTypography-root': {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+    fontWeight: 600,
+    fontSize: '1.5rem',
+  },
+}));
+
+const InfoCard = styled(Card)(({ theme }) => ({
+  borderRadius: 16,
+  background: 'rgba(255, 255, 255, 0.9)',
+  border: `1px solid ${theme.palette.grey[100]}`,
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    boxShadow: `0 8px 25px rgba(99, 102, 241, 0.1)`,
+    transform: 'translateY(-2px)',
+  },
+}));
+
+const InfoRow = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  padding: theme.spacing(2),
+  borderRadius: 12,
+  margin: theme.spacing(1, 0),
+  background: 'rgba(248, 250, 252, 0.6)',
+  border: `1px solid ${theme.palette.grey[100]}`,
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    background: 'rgba(99, 102, 241, 0.05)',
+    borderColor: theme.palette.primary.light,
+  },
+}));
+
+const IconContainer = styled(Box)(({ theme }) => ({
+  width: 40,
+  height: 40,
+  borderRadius: '50%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: `linear-gradient(135deg, ${theme.palette.primary.main}20 0%, ${theme.palette.secondary.main}20 100%)`,
+  marginRight: theme.spacing(2),
+}));
+
+const ActionButton = styled(Button)(({ theme }) => ({
+  borderRadius: 12,
+  padding: theme.spacing(1.5, 3),
+  fontWeight: 600,
+  textTransform: 'none',
+  fontSize: '0.95rem',
+  transition: 'all 0.3s ease',
+}));
+
+const DownloadButton = styled(ActionButton)(({ theme }) => ({
+  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+  color: 'white',
+  boxShadow: `0 4px 15px rgba(99, 102, 241, 0.3)`,
+  '&:hover': {
+    boxShadow: `0 6px 20px rgba(99, 102, 241, 0.4)`,
+    transform: 'translateY(-2px)',
+  },
+}));
+
+const PrintButton = styled(ActionButton)(({ theme }) => ({
+  color: theme.palette.secondary.main,
+  border: `2px solid ${theme.palette.secondary.main}`,
+  backgroundColor: 'rgba(6, 182, 212, 0.1)',
+  '&:hover': {
+    backgroundColor: 'rgba(6, 182, 212, 0.2)',
+    transform: 'translateY(-1px)',
+  },
+}));
+
+const CloseButton = styled(ActionButton)(({ theme }) => ({
+  color: theme.palette.grey[600],
+  border: `2px solid ${theme.palette.grey[200]}`,
+  backgroundColor: 'white',
+  '&:hover': {
+    backgroundColor: theme.palette.grey[50],
+    borderColor: theme.palette.grey[300],
+    transform: 'translateY(-1px)',
+  },
+}));
+
+const StatusChip = styled(Chip)(({ theme, status }) => {
+  const getStatusColor = () => {
+    switch (status?.toLowerCase()) {
+      case 'approved':
+        return { bg: theme.palette.success.main, color: 'white' };
+      case 'pending':
+        return { bg: theme.palette.warning.main, color: 'white' };
+      case 'rejected':
+        return { bg: theme.palette.error.main, color: 'white' };
+      default:
+        return { bg: theme.palette.grey[400], color: 'white' };
+    }
+  };
+
+  const colors = getStatusColor();
+  return {
+    backgroundColor: colors.bg,
+    color: colors.color,
+    fontWeight: 600,
+    borderRadius: 20,
+    padding: theme.spacing(0.5, 1),
+  };
+});
+
+const WatermarkBox = styled(Box)(() => ({
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%) rotate(-45deg)',
+  fontSize: '4rem',
+  fontWeight: 900,
+  color: 'rgba(99, 102, 241, 0.05)',
+  zIndex: 0,
+  userSelect: 'none',
+  pointerEvents: 'none',
+}));
 
 const LeadDetailsModal = ({ open, onClose, lead }) => {
   if (!lead) return null;
@@ -54,55 +217,293 @@ const LeadDetailsModal = ({ open, onClose, lead }) => {
     window.location.reload();
   };
 
+  const leadInfo = [
+    { 
+      icon: <Person color="primary" />, 
+      label: 'Customer Name', 
+      value: lead.customerName,
+      section: 'personal'
+    },
+    { 
+      icon: <Phone color="primary" />, 
+      label: 'Mobile Number', 
+      value: lead.mobileNumber,
+      section: 'personal'
+    },
+    { 
+      icon: <CreditCard color="primary" />, 
+      label: 'PAN Card', 
+      value: lead.panCard,
+      section: 'personal'
+    },
+    { 
+      icon: <Fingerprint color="primary" />, 
+      label: 'Aadhar Number', 
+      value: lead.aadharNumber,
+      section: 'personal'
+    },
+    { 
+      icon: <Work color="secondary" />, 
+      label: 'Employment Type', 
+      value: lead.employmentType,
+      section: 'employment'
+    },
+    { 
+      icon: <AttachMoney color="secondary" />, 
+      label: 'Monthly Salary', 
+      value: `₹${parseInt(lead.monthlySalary).toLocaleString('en-IN')}`,
+      section: 'employment'
+    },
+    { 
+      icon: <AccountBalance color="secondary" />, 
+      label: 'Preferred Bank', 
+      value: lead.preferredBank || 'Not Specified',
+      section: 'banking'
+    },
+  ];
+
+  const systemInfo = [
+    { 
+      icon: <TrendingUp color="info" />, 
+      label: 'Status', 
+      value: <StatusChip label={lead.status} status={lead.status} size="small" />,
+      section: 'system'
+    },
+    { 
+      icon: <Badge color="info" />, 
+      label: 'Source', 
+      value: lead.source,
+      section: 'system'
+    },
+    { 
+      icon: <PersonAdd color="info" />, 
+      label: 'Created By', 
+      value: lead.createdBy?.name || 'System',
+      section: 'system'
+    },
+    { 
+      icon: <CalendarToday color="info" />, 
+      label: 'Created At', 
+      value: format(new Date(lead.createdAt), 'PPpp'),
+      section: 'system'
+    },
+  ];
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ fontWeight: 700, borderBottom: '1px solid #eee' }}>
-        Lead Details
-      </DialogTitle>
-      <DialogContent dividers id="lead-details-content" sx={{ position: 'relative' }}>
-        <Box sx={{ p: 2 }}>
-          <Grid container spacing={2}>
-            <Grid item xs={6}><Typography variant="subtitle2">Customer Name:</Typography></Grid>
-            <Grid item xs={6}><Typography>{lead.customerName}</Typography></Grid>
-            
-            <Grid item xs={6}><Typography variant="subtitle2">Mobile Number:</Typography></Grid>
-            <Grid item xs={6}><Typography>{lead.mobileNumber}</Typography></Grid>
-            
-            <Grid item xs={6}><Typography variant="subtitle2">PAN Card:</Typography></Grid>
-            <Grid item xs={6}><Typography>{lead.panCard}</Typography></Grid>
-            
-            <Grid item xs={6}><Typography variant="subtitle2">Aadhar Number:</Typography></Grid>
-            <Grid item xs={6}><Typography>{lead.aadharNumber}</Typography></Grid>
-            
-            <Grid item xs={6}><Typography variant="subtitle2">Employment Type:</Typography></Grid>
-            <Grid item xs={6}><Typography>{lead.employmentType}</Typography></Grid>
-            
-            <Grid item xs={6}><Typography variant="subtitle2">Monthly Salary:</Typography></Grid>
-            <Grid item xs={6}><Typography>₹{lead.monthlySalary}</Typography></Grid>
-            
-            <Grid item xs={6}><Typography variant="subtitle2">Preferred Bank:</Typography></Grid>
-            <Grid item xs={6}><Typography>{lead.preferredBank || 'N/A'}</Typography></Grid>
-            
-            <Grid item xs={6}><Typography variant="subtitle2">Status:</Typography></Grid>
-            <Grid item xs={6}><Chip label={lead.status} size="small" /></Grid>
-            
-            <Grid item xs={6}><Typography variant="subtitle2">Source:</Typography></Grid>
-            <Grid item xs={6}><Typography>{lead.source}</Typography></Grid>
-            
-            <Grid item xs={6}><Typography variant="subtitle2">Created By:</Typography></Grid>
-            <Grid item xs={6}><Typography>{lead.createdBy?.name || 'N/A'}</Typography></Grid>
-            
-            <Grid item xs={6}><Typography variant="subtitle2">Created At:</Typography></Grid>
-            <Grid item xs={6}><Typography>{format(new Date(lead.createdAt), 'PPpp')}</Typography></Grid>
-          </Grid>
+    <StyledDialog 
+      open={open} 
+      onClose={onClose} 
+      fullWidth 
+      TransitionComponent={Fade}
+      TransitionProps={{ timeout: 300 }}
+    >
+      <StyledDialogTitle>
+        <Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)', mr: 1 }}>
+          <Person />
+        </Avatar>
+        <Typography variant="h6" component="span">
+          Lead Details - {lead.customerName}
+        </Typography>
+        <IconButton
+          aria-label="close"
+          onClick={onClose}
+          sx={{
+            position: 'absolute',
+            right: 16,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: 'white',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            },
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </StyledDialogTitle>
+
+      <DialogContent 
+        id="lead-details-content" 
+        sx={{ 
+          p: 3, 
+          position: 'relative',
+          background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+        }}
+      >
+        <WatermarkBox>
+          EBS CARD
+        </WatermarkBox>
+
+        {/* Personal Information Section */}
+        <Box sx={{ mb: 4, position: 'relative', zIndex: 1 }}>
+          <Typography 
+            variant="h6" 
+            sx={{ 
+              mb: 2, 
+              color: 'primary.main', 
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}
+          >
+            <Person /> Personal Information
+          </Typography>
+          <InfoCard>
+            <CardContent sx={{ p: 2 }}>
+              <Grid container spacing={1}>
+                {leadInfo.filter(info => info.section === 'personal').map((info, index) => (
+                  <Grid item xs={12} key={index}>
+                    <InfoRow>
+                      <IconContainer>
+                        {info.icon}
+                      </IconContainer>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                          {info.label}
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                          {info.value}
+                        </Typography>
+                      </Box>
+                    </InfoRow>
+                  </Grid>
+                ))}
+              </Grid>
+            </CardContent>
+          </InfoCard>
+        </Box>
+
+        {/* Employment & Banking Section */}
+        <Box sx={{ mb: 4, position: 'relative', zIndex: 1 }}>
+          <Typography 
+            variant="h6" 
+            sx={{ 
+              mb: 2, 
+              color: 'secondary.main', 
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}
+          >
+            <Work /> Employment & Banking
+          </Typography>
+          <InfoCard>
+            <CardContent sx={{ p: 2 }}>
+              <Grid container spacing={1}>
+                {leadInfo.filter(info => ['employment', 'banking'].includes(info.section)).map((info, index) => (
+                  <Grid item xs={12} key={index}>
+                    <InfoRow>
+                      <IconContainer>
+                        {info.icon}
+                      </IconContainer>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                          {info.label}
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                          {info.value}
+                        </Typography>
+                      </Box>
+                    </InfoRow>
+                  </Grid>
+                ))}
+              </Grid>
+            </CardContent>
+          </InfoCard>
+        </Box>
+
+        {/* System Information Section */}
+        <Box sx={{ position: 'relative', zIndex: 1 }}>
+          <Typography 
+            variant="h6" 
+            sx={{ 
+              mb: 2, 
+              color: 'info.main', 
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}
+          >
+            <Badge /> System Information
+          </Typography>
+          <InfoCard>
+            <CardContent sx={{ p: 2 }}>
+              <Grid container spacing={1}>
+                {systemInfo.map((info, index) => (
+                  <Grid item xs={12} key={index}>
+                    <InfoRow>
+                      <IconContainer>
+                        {info.icon}
+                      </IconContainer>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                          {info.label}
+                        </Typography>
+                        <Box sx={{ mt: 0.5 }}>
+                          {typeof info.value === 'string' ? (
+                            <Typography variant="body1" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                              {info.value}
+                            </Typography>
+                          ) : (
+                            info.value
+                          )}
+                        </Box>
+                      </Box>
+                    </InfoRow>
+                  </Grid>
+                ))}
+              </Grid>
+            </CardContent>
+          </InfoCard>
         </Box>
       </DialogContent>
-      <DialogActions sx={{ p: 2, borderTop: '1px solid #eee' }}>
-        <Button onClick={handlePrint} startIcon={<Print />}>Print</Button>
-        <Button onClick={handleDownloadPdf} startIcon={<GetApp />} variant="contained">Download PDF</Button>
-        <Button onClick={onClose}>Close</Button>
+
+      <Divider />
+
+      <DialogActions sx={{ p: 3, gap: 2 }}>
+        <Paper
+          sx={{
+            display: 'flex',
+            gap: 2,
+            p: 2,
+            borderRadius: 2,
+            bgcolor: 'grey.50',
+            width: '100%',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <Tooltip title="Print lead details">
+            <PrintButton 
+              onClick={handlePrint} 
+              startIcon={<Print />}
+              size="large"
+            >
+              Print
+            </PrintButton>
+          </Tooltip>
+          
+          <Tooltip title="Download as PDF">
+            <DownloadButton 
+              onClick={handleDownloadPdf} 
+              startIcon={<GetApp />}
+              size="large"
+            >
+              Download PDF
+            </DownloadButton>
+          </Tooltip>
+          
+          <CloseButton 
+            onClick={onClose}
+            size="large"
+          >
+            Close
+          </CloseButton>
+        </Paper>
       </DialogActions>
-    </Dialog>
+    </StyledDialog>
   );
 };
 

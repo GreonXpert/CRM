@@ -10,9 +10,10 @@ import {
   Avatar,
   Paper,
   Chip,
-  LinearProgress,
-  IconButton,
-  alpha,
+  Button,
+  Fade,
+  Slide,
+  useTheme,
 } from '@mui/material';
 import {
   TrendingUp,
@@ -21,399 +22,376 @@ import {
   AttachMoney,
   ArrowUpward,
   ArrowDownward,
-  MoreVert,
-  Notifications,
+  Add,
+  Dashboard as DashboardIcon,
+  Business,
+  Speed,
+  Star,
+  Timeline,
+  Analytics,
 } from '@mui/icons-material';
+import { styled, keyframes } from '@mui/material/styles';
 import { useAuth } from '../../contexts/AuthContext';
+
+// Animations
+const float = keyframes`
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+`;
+
+const glow = keyframes`
+  0%, 100% { box-shadow: 0 4px 20px rgba(99, 102, 241, 0.2); }
+  50% { box-shadow: 0 8px 40px rgba(99, 102, 241, 0.4); }
+`;
+
+// Styled Components
+const WelcomeSection = styled(Box)(({ theme }) => ({
+  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+  borderRadius: 24,
+  padding: theme.spacing(4),
+  marginBottom: theme.spacing(4),
+  color: 'white',
+  position: 'relative',
+  overflow: 'hidden',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(255, 255, 255, 0.1)',
+    backdropFilter: 'blur(10px)',
+  },
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    top: '-50%',
+    right: '-20%',
+    width: '300px',
+    height: '300px',
+    background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+    borderRadius: '50%',
+  },
+}));
+
+const StatsCard = styled(Card)(({ theme, color }) => ({
+  borderRadius: 20,
+  background: `linear-gradient(135deg, ${color}10 0%, ${color}05 100%)`,
+  border: `1px solid ${color}20`,
+  transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+  position: 'relative',
+  overflow: 'hidden',
+  '&:hover': {
+    transform: 'translateY(-8px) scale(1.02)',
+    boxShadow: `0 20px 40px ${color}30`,
+    animation: `${glow} 2s ease-in-out infinite`,
+  },
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '4px',
+    background: `linear-gradient(90deg, ${color} 0%, ${color}80 100%)`,
+  },
+}));
+
+const ActionCard = styled(Paper)(({ theme, gradient }) => ({
+  padding: theme.spacing(3),
+  borderRadius: 20,
+  background: gradient,
+  color: 'white',
+  cursor: 'pointer',
+  transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+  position: 'relative',
+  overflow: 'hidden',
+  '&:hover': {
+    transform: 'translateY(-4px) scale(1.05)',
+    boxShadow: '0 15px 35px rgba(0, 0, 0, 0.2)',
+  },
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(255, 255, 255, 0.1)',
+    opacity: 0,
+    transition: 'opacity 0.3s ease',
+  },
+  '&:hover::before': {
+    opacity: 1,
+  },
+}));
+
+const FloatingIcon = styled(Avatar)(({ theme }) => ({
+  width: 60,
+  height: 60,
+  animation: `${float} 3s ease-in-out infinite`,
+  background: 'rgba(255, 255, 255, 0.2)',
+  backdropFilter: 'blur(10px)',
+  border: '1px solid rgba(255, 255, 255, 0.3)',
+}));
+
+const MetricCard = styled(Card)(({ theme }) => ({
+  borderRadius: 16,
+  background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.grey[50]} 100%)`,
+  border: `1px solid ${theme.palette.grey[100]}`,
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    transform: 'translateY(-2px)',
+    boxShadow: '0 10px 30px rgba(99, 102, 241, 0.15)',
+  },
+}));
 
 const DashboardHome = () => {
   const { user, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
+  const theme = useTheme();
 
   const stats = [
     {
       title: 'Total Leads',
-      value: '1,234',
-      change: '+12%',
+      value: '12,847',
+      change: '+23%',
       trend: 'up',
       icon: People,
-      color: '#6366f1',
-      bgColor: alpha('#6366f1', 0.1),
+      color: theme.palette.primary.main,
     },
     {
       title: 'Conversions',
-      value: '456',
-      change: '+8%',
+      value: '3,421',
+      change: '+18%',
       trend: 'up',
       icon: TrendingUp,
-      color: '#10b981',
-      bgColor: alpha('#10b981', 0.1),
+      color: theme.palette.success.main,
     },
     {
       title: 'Revenue',
-      value: '$12,345',
-      change: '+15%',
+      value: '₹1,24,56',
+      change: '+11%',
       trend: 'up',
       icon: AttachMoney,
-      color: '#f59e0b',
-      bgColor: alpha('#f59e0b', 0.1),
+      color: theme.palette.warning.main,
     },
     {
-      title: 'Reports',
-      value: '89',
-      change: '-3%',
-      trend: 'down',
-      icon: Assessment,
-      color: '#ef4444',
-      bgColor: alpha('#ef4444', 0.1),
+      title: 'Performance',
+      value: '94.2%',
+      change: '+5%',
+      trend: 'up',
+      icon: Speed,
+      color: theme.palette.info.main,
     },
   ];
 
-  const recentActivities = [
+  const quickActions = [
     {
-      id: 1,
-      action: 'New lead created',
-      user: 'John Doe',
-      time: '2 minutes ago',
-      type: 'lead',
+      title: 'Create New Lead',
+      description: 'Add a new potential customer',
+      icon: <Add sx={{ fontSize: 28 }} />,
+      gradient: theme.gradients?.primary || `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+      onClick: () => navigate('/dashboard/leads'),
     },
     {
-      id: 2,
-      action: 'Report generated',
-      user: 'Sarah Wilson',
-      time: '15 minutes ago',
-      type: 'report',
+      title: 'Generate Report',
+      description: 'Create comprehensive analytics',
+      icon: <Assessment sx={{ fontSize: 28 }} />,
+      gradient: theme.gradients?.success || `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.dark} 100%)`,
+      onClick: () => console.log('Generate Report'),
     },
     {
-      id: 3,
-      action: 'Lead status updated',
-      user: 'Mike Johnson',
-      time: '1 hour ago',
-      type: 'update',
-    },
-    {
-      id: 4,
-      action: 'New admin created',
-      user: 'Super Admin',
-      time: '2 hours ago',
-      type: 'admin',
+      title: 'View Analytics',
+      description: 'Deep dive into performance',
+      icon: <Analytics sx={{ fontSize: 28 }} />,
+      gradient: theme.gradients?.info || `linear-gradient(135deg, ${theme.palette.info.main} 0%, ${theme.palette.info.dark} 100%)`,
+      onClick: () => console.log('View Analytics'),
     },
   ];
 
-  const getActivityIcon = (type) => {
-    switch (type) {
-      case 'lead':
-        return <People sx={{ fontSize: 16 }} />;
-      case 'report':
-        return <Assessment sx={{ fontSize: 16 }} />;
-      case 'update':
-        return <TrendingUp sx={{ fontSize: 16 }} />;
-      case 'admin':
-        return <Notifications sx={{ fontSize: 16 }} />;
-      default:
-        return <Notifications sx={{ fontSize: 16 }} />;
-    }
-  };
+  if (isSuperAdmin()) {
+    quickActions.unshift({
+      title: 'Manage Admins',
+      description: 'Create and manage admin users',
+      icon: <Business sx={{ fontSize: 28 }} />,
+      gradient: theme.gradients?.warning || `linear-gradient(135deg, ${theme.palette.warning.main} 0%, ${theme.palette.warning.dark} 100%)`,
+      onClick: () => navigate('/dashboard/admin-management', { state: { openDialog: true } }),
+    });
+  }
 
-  const handleCreateAdminClick = () => {
-    navigate('/dashboard/admin-management', { state: { openDialog: true } });
-  };
+  const performanceMetrics = [
+    { label: 'Lead Quality Score', value: 8.9, max: 10, color: theme.palette.success.main },
+    { label: 'Response Time', value: 7.2, max: 10, color: theme.palette.warning.main },
+    { label: 'Customer Satisfaction', value: 9.4, max: 10, color: theme.palette.primary.main },
+    { label: 'Team Efficiency', value: 8.7, max: 10, color: theme.palette.secondary.main },
+  ];
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
-      {/* Welcome Section */}
-      <Box sx={{ mb: 4 }}>
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 700,
-            color: 'text.primary',
-            mb: 1,
-          }}
-        >
-          Welcome back, {user?.name}! 👋
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{
-            color: 'text.secondary',
-            mb: 2,
-          }}
-        >
-          Here's what's happening with your CRM today.
-        </Typography>
-        <Chip
-          label={user?.role}
-          color={isSuperAdmin() ? 'error' : 'primary'}
-          sx={{
-            fontWeight: 600,
-            px: 1,
-          }}
-        />
-      </Box>
+    <Box>
+      {/* Enhanced Welcome Section */}
+      <Fade in={true} timeout={1000}>
+        <WelcomeSection>
+          <Box sx={{ position: 'relative', zIndex: 1 }}>
+            <Grid container alignItems="center" spacing={3}>
+              <Grid item xs={12} md={8}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                  <FloatingIcon>
+                    <DashboardIcon sx={{ fontSize: 28 }} />
+                  </FloatingIcon>
+                  <Box>
+                    <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+                      Welcome back, {user?.name}! 🚀
+                    </Typography>
+                    <Typography variant="h6" sx={{ opacity: 0.9, fontWeight: 400 }}>
+                      Your CRM dashboard is looking fantastic today
+                    </Typography>
+                  </Box>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  <Chip
+                    icon={<Star />}
+                    label={user?.role}
+                    sx={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      color: 'white',
+                      fontWeight: 600,
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                    }}
+                  />
+                  <Chip
+                    icon={<Timeline />}
+                    label="Active Dashboard"
+                    sx={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      color: 'white',
+                      fontWeight: 600,
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                    }}
+                  />
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={4} sx={{ textAlign: 'center' }}>
+                <Typography variant="h2" sx={{ fontWeight: 800, opacity: 0.3, mb: 1 }}>
+                  {new Date().getDate()}
+                </Typography>
+                <Typography variant="h6" sx={{ opacity: 0.8 }}>
+                  {new Date().toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long' 
+                  })}
+                </Typography>
+              </Grid>
+            </Grid>
+          </Box>
+        </WelcomeSection>
+      </Fade>
 
-      {/* Stats Grid */}
+      {/* Enhanced Stats Grid */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           const TrendIcon = stat.trend === 'up' ? ArrowUpward : ArrowDownward;
           
           return (
-            <Grid item xs={12} sm={6} md={3} key={index}>
-              <Card
-                sx={{
-                  height: '100%',
-                  position: 'relative',
-                  overflow: 'visible',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: '0 12px 20px -4px rgba(0, 0, 0, 0.15)',
-                  },
-                  transition: 'all 0.3s ease-in-out',
-                }}
-              >
-                <CardContent sx={{ p: 3 }}>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      mb: 2,
-                    }}
-                  >
-                    <Avatar
-                      sx={{
-                        backgroundColor: stat.bgColor,
-                        color: stat.color,
-                        width: 48,
-                        height: 48,
-                      }}
-                    >
-                      <Icon />
-                    </Avatar>
-                    <IconButton size="small">
-                      <MoreVert />
-                    </IconButton>
-                  </Box>
-                  
-                  <Typography
-                    variant="h4"
-                    sx={{
-                      fontWeight: 700,
-                      color: 'text.primary',
-                      mb: 1,
-                    }}
-                  >
-                    {stat.value}
-                  </Typography>
-                  
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: 'text.secondary',
-                      mb: 2,
-                    }}
-                  >
-                    {stat.title}
-                  </Typography>
-                  
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                    }}
-                  >
-                    <Chip
-                      icon={<TrendIcon sx={{ fontSize: 14 }} />}
-                      label={stat.change}
-                      size="small"
-                      color={stat.trend === 'up' ? 'success' : 'error'}
-                      sx={{
-                        height: 24,
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                      }}
-                    />
-                    <Typography
-                      variant="caption"
-                      sx={{ color: 'text.secondary' }}
-                    >
-                      vs last month
+            <Grid item xs={12} sm={6} lg={3} key={index}>
+              <Slide in={true} timeout={500 + index * 100} direction="up">
+                <StatsCard color={stat.color}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                      <Avatar
+                        sx={{
+                          backgroundColor: stat.color,
+                          color: 'white',
+                          width: 56,
+                          height: 56,
+                          boxShadow: `0 8px 20px ${stat.color}40`,
+                        }}
+                      >
+                        <Icon sx={{ fontSize: 28 }} />
+                      </Avatar>
+                      <Chip
+                        icon={<TrendIcon sx={{ fontSize: 16 }} />}
+                        label={stat.change}
+                        size="small"
+                        sx={{
+                          backgroundColor: stat.trend === 'up' ? theme.palette.success.main : theme.palette.error.main,
+                          color: 'white',
+                          fontWeight: 600,
+                        }}
+                      />
+                    </Box>
+                    
+                    <Typography variant="h4" sx={{ fontWeight: 800, color: 'text.primary', mb: 1 }}>
+                      {stat.value}
                     </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
+                    
+                    <Typography variant="h6" sx={{ color: 'text.primary', mb: 1, fontWeight: 600 }}>
+                      {stat.title}
+                    </Typography>
+                    
+                    <Typography variant="body2" sx={{ color: 'text.secondary', opacity: 0.8 }}>
+                      {stat.description}
+                    </Typography>
+                  </CardContent>
+                </StatsCard>
+              </Slide>
             </Grid>
           );
         })}
       </Grid>
 
-      {/* Content Grid */}
-      <Grid container spacing={3}>
+      {/* Enhanced Content Grid */}
+      <Grid container spacing={4}>
         {/* Quick Actions */}
         <Grid item xs={12} lg={8}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 600,
-                  color: 'text.primary',
-                  mb: 3,
-                }}
-              >
-                Quick Actions
-              </Typography>
-              
-              <Grid container spacing={2}>
-                {isSuperAdmin() && (
-                  <Grid item xs={12} md={6}>
-                    <Paper
-                      onClick={handleCreateAdminClick}
-                      sx={{
-                        p: 3,
-                        backgroundColor: alpha('#6366f1', 0.05),
-                        border: `1px solid ${alpha('#6366f1', 0.1)}`,
-                        borderRadius: 2,
-                        cursor: 'pointer',
-                        '&:hover': {
-                          backgroundColor: alpha('#6366f1', 0.1),
-                          transform: 'translateY(-2px)',
-                        },
-                        transition: 'all 0.2s ease-in-out',
-                        height: '100%',
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Avatar
-                          sx={{
-                            backgroundColor: 'primary.main',
-                            color: 'white',
-                          }}
-                        >
-                          <People />
-                        </Avatar>
-                        <Box>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                            Create Admin
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Add new admin user
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Paper>
-                  </Grid>
-                )}
+          <Fade in={true} timeout={1200}>
+            <Card sx={{ borderRadius: 3, overflow: 'hidden' }}>
+              <CardContent sx={{ p: 4 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                  <Avatar sx={{ backgroundColor: 'primary.main', color: 'white' }}>
+                    <DashboardIcon />
+                  </Avatar>
+                  <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary' }}>
+                    Quick Actions
+                  </Typography>
+                </Box>
                 
-                <Grid item xs={12} md={isSuperAdmin() ? 6 : 12}>
-                  <Paper
-                    sx={{
-                      p: 3,
-                      backgroundColor: alpha('#10b981', 0.05),
-                      border: `1px solid ${alpha('#10b981', 0.1)}`,
-                      borderRadius: 2,
-                      cursor: 'pointer',
-                      '&:hover': {
-                        backgroundColor: alpha('#10b981', 0.1),
-                        transform: 'translateY(-2px)',
-                      },
-                      transition: 'all 0.2s ease-in-out',
-                      height: '100%',
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Avatar
-                        sx={{
-                          backgroundColor: 'success.main',
-                          color: 'white',
-                        }}
-                      >
-                        <Assessment />
-                      </Avatar>
-                      <Box>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                          Generate Report
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Create performance report
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Paper>
+                <Grid container spacing={3}>
+                  {quickActions.map((action, index) => (
+                    <Grid item xs={12} md={6} key={index}>
+                      <Slide in={true} timeout={800 + index * 200} direction="left">
+                        <ActionCard
+                          gradient={action.gradient}
+                          onClick={action.onClick}
+                          elevation={0}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Avatar sx={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', color: 'white', width: 50, height: 50 }}>
+                              {action.icon}
+                            </Avatar>
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+                                {action.title}
+                              </Typography>
+                              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                                {action.description}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </ActionCard>
+                      </Slide>
+                    </Grid>
+                  ))}
                 </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Fade>
         </Grid>
 
-        {/* Recent Activities */}
-        <Grid item xs={12} lg={4}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 600,
-                  color: 'text.primary',
-                  mb: 3,
-                }}
-              >
-                Recent Activities
-              </Typography>
-              
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {recentActivities.map((activity) => (
-                  <Box
-                    key={activity.id}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 2,
-                      p: 2,
-                      backgroundColor: 'grey.50',
-                      borderRadius: 2,
-                      '&:hover': {
-                        backgroundColor: 'grey.100',
-                      },
-                      transition: 'background-color 0.2s ease-in-out',
-                    }}
-                  >
-                    <Avatar
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        backgroundColor: 'primary.light',
-                        color: 'primary.main',
-                      }}
-                    >
-                      {getActivityIcon(activity.type)}
-                    </Avatar>
-                    <Box sx={{ flexGrow: 1 }}>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          fontWeight: 500,
-                          color: 'text.primary',
-                          mb: 0.5,
-                        }}
-                      >
-                        {activity.action}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        sx={{ color: 'text.secondary' }}
-                      >
-                        by {activity.user} • {activity.time}
-                      </Typography>
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+       
       </Grid>
     </Box>
   );
