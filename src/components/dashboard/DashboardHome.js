@@ -10,16 +10,18 @@ import {
   Avatar,
   Paper,
   Chip,
-  Button,
   Fade,
   Slide,
   useTheme,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   TrendingUp,
   People,
   Assessment,
-  AttachMoney,
+  CheckCircle, // Changed Icon
+  Cancel, // Changed Icon
   ArrowUpward,
   ArrowDownward,
   Add,
@@ -32,8 +34,9 @@ import {
 } from '@mui/icons-material';
 import { styled, keyframes } from '@mui/material/styles';
 import { useAuth } from '../../contexts/AuthContext';
+import { useGetDashboardStatsQuery } from '../../store/api/reportApi'; // Import the hook
 
-// Animations
+// Animations & Styled Components (no changes here)
 const float = keyframes`
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
@@ -44,7 +47,6 @@ const glow = keyframes`
   50% { box-shadow: 0 8px 40px rgba(99, 102, 241, 0.4); }
 `;
 
-// Styled Components
 const WelcomeSection = styled(Box)(({ theme }) => ({
   background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
   borderRadius: 24,
@@ -136,54 +138,42 @@ const FloatingIcon = styled(Avatar)(({ theme }) => ({
   border: '1px solid rgba(255, 255, 255, 0.3)',
 }));
 
-const MetricCard = styled(Card)(({ theme }) => ({
-  borderRadius: 16,
-  background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.grey[50]} 100%)`,
-  border: `1px solid ${theme.palette.grey[100]}`,
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    transform: 'translateY(-2px)',
-    boxShadow: '0 10px 30px rgba(99, 102, 241, 0.15)',
-  },
-}));
-
-const DashboardHome = () => {
+const DashboardHome = ({ onGenerateReport }) => { // Receive prop to open modal
   const { user, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
 
+  // Fetch dashboard stats from the API
+  const { data: statsData, error, isLoading } = useGetDashboardStatsQuery();
+
   const stats = [
     {
       title: 'Total Leads',
-      value: '12,847',
-      change: '+23%',
-      trend: 'up',
+      value: statsData?.data?.totalLeads ?? '...',
+      description: 'All-time leads created',
       icon: People,
       color: theme.palette.primary.main,
     },
     {
-      title: 'Conversions',
-      value: '3,421',
-      change: '+18%',
-      trend: 'up',
+      title: 'New Leads (30 Days)',
+      value: statsData?.data?.leadsLast30Days ?? '...',
+      description: 'Leads created recently',
       icon: TrendingUp,
+      color: theme.palette.info.main,
+    },
+    {
+      title: 'Approved',
+      value: statsData?.data?.statusCounts?.Approved ?? '...',
+      description: 'Successfully converted leads',
+      icon: CheckCircle,
       color: theme.palette.success.main,
     },
     {
-      title: 'Revenue',
-      value: '₹1,24,56',
-      change: '+11%',
-      trend: 'up',
-      icon: AttachMoney,
-      color: theme.palette.warning.main,
-    },
-    {
-      title: 'Performance',
-      value: '94.2%',
-      change: '+5%',
-      trend: 'up',
-      icon: Speed,
-      color: theme.palette.info.main,
+      title: 'Rejected',
+      value: statsData?.data?.statusCounts?.Rejected ?? '...',
+      description: 'Leads that did not convert',
+      icon: Cancel,
+      color: theme.palette.error.main,
     },
   ];
 
@@ -200,7 +190,7 @@ const DashboardHome = () => {
       description: 'Create comprehensive analytics',
       icon: <Assessment sx={{ fontSize: 28 }} />,
       gradient: theme.gradients?.success || `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.dark} 100%)`,
-      onClick: () => console.log('Generate Report'),
+      onClick: onGenerateReport, // Use the passed function
     },
     {
       title: 'View Analytics',
@@ -221,17 +211,10 @@ const DashboardHome = () => {
     });
   }
 
-  const performanceMetrics = [
-    { label: 'Lead Quality Score', value: 8.9, max: 10, color: theme.palette.success.main },
-    { label: 'Response Time', value: 7.2, max: 10, color: theme.palette.warning.main },
-    { label: 'Customer Satisfaction', value: 9.4, max: 10, color: theme.palette.primary.main },
-    { label: 'Team Efficiency', value: 8.7, max: 10, color: theme.palette.secondary.main },
-  ];
-
   return (
     <Box>
-      {/* Enhanced Welcome Section */}
-      <Fade in={true} timeout={1000}>
+      {/* Enhanced Welcome Section (No data changes needed here) */}
+    <Fade in={true} timeout={1000}>
         <WelcomeSection>
           <Box sx={{ position: 'relative', zIndex: 1 }}>
             <Grid container alignItems="center" spacing={3}>
@@ -289,12 +272,22 @@ const DashboardHome = () => {
         </WelcomeSection>
       </Fade>
 
+      {/* Loading and Error States */}
+      {isLoading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+          <CircularProgress />
+        </Box>
+      )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 4 }}>
+          Could not load dashboard statistics. Please try again later.
+        </Alert>
+      )}
+
       {/* Enhanced Stats Grid */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {stats.map((stat, index) => {
           const Icon = stat.icon;
-          const TrendIcon = stat.trend === 'up' ? ArrowUpward : ArrowDownward;
-          
           return (
             <Grid item xs={12} sm={6} lg={3} key={index}>
               <Slide in={true} timeout={500 + index * 100} direction="up">
@@ -312,26 +305,13 @@ const DashboardHome = () => {
                       >
                         <Icon sx={{ fontSize: 28 }} />
                       </Avatar>
-                      <Chip
-                        icon={<TrendIcon sx={{ fontSize: 16 }} />}
-                        label={stat.change}
-                        size="small"
-                        sx={{
-                          backgroundColor: stat.trend === 'up' ? theme.palette.success.main : theme.palette.error.main,
-                          color: 'white',
-                          fontWeight: 600,
-                        }}
-                      />
                     </Box>
-                    
                     <Typography variant="h4" sx={{ fontWeight: 800, color: 'text.primary', mb: 1 }}>
-                      {stat.value}
+                      {isLoading ? <CircularProgress size={24} /> : stat.value}
                     </Typography>
-                    
                     <Typography variant="h6" sx={{ color: 'text.primary', mb: 1, fontWeight: 600 }}>
                       {stat.title}
                     </Typography>
-                    
                     <Typography variant="body2" sx={{ color: 'text.secondary', opacity: 0.8 }}>
                       {stat.description}
                     </Typography>
@@ -345,7 +325,6 @@ const DashboardHome = () => {
 
       {/* Enhanced Content Grid */}
       <Grid container spacing={4}>
-        {/* Quick Actions */}
         <Grid item xs={12} lg={8}>
           <Fade in={true} timeout={1200}>
             <Card sx={{ borderRadius: 3, overflow: 'hidden' }}>
@@ -358,7 +337,6 @@ const DashboardHome = () => {
                     Quick Actions
                   </Typography>
                 </Box>
-                
                 <Grid container spacing={3}>
                   {quickActions.map((action, index) => (
                     <Grid item xs={12} md={6} key={index}>
@@ -390,8 +368,6 @@ const DashboardHome = () => {
             </Card>
           </Fade>
         </Grid>
-
-       
       </Grid>
     </Box>
   );

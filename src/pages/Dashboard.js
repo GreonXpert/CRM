@@ -16,10 +16,12 @@ import Sidebar from '../components/layout/Sidebar';
 import DashboardHome from '../components/dashboard/DashboardHome';
 import AdminManagement from '../components/admin/AdminManagement';
 import LeadPage from './LeadPage';
+import CustomReportModal from '../components/dashboard/CustomReportModal'; // Import the modal
+import AnalyticsPage from './AnalyticsPage';
 
 const DRAWER_WIDTH = 280;
 
-// Styled Components
+// Styled Components (no changes here)
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
   background: `linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.95) 100%)`,
   backdropFilter: 'blur(20px)',
@@ -56,11 +58,20 @@ const ContentWrapper = styled(Box)(() => ({
 
 const Dashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false); // State for the report modal
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
+  };
+
+  const handleReportModalOpen = () => {
+    setReportModalOpen(true);
+  };
+
+  const handleReportModalClose = () => {
+    setReportModalOpen(false);
   };
 
   return (
@@ -134,14 +145,24 @@ const Dashboard = () => {
           <Fade in={true} timeout={800}>
             <Box>
               <Routes>
-                <Route path="/" element={<DashboardHome />} />
+                <Route
+                  path="/"
+                  element={<DashboardHome onGenerateReport={handleReportModalOpen} />}
+                />
                 <Route path="/admin-management" element={<AdminManagement />} />
                 <Route path="/leads" element={<LeadPage />} />
+                <Route path="/analytics" element={<AnalyticsPage />} />
               </Routes>
             </Box>
           </Fade>
         </ContentWrapper>
       </MainContent>
+
+      {/* Report Modal */}
+      <CustomReportModal
+        open={reportModalOpen}
+        handleClose={handleReportModalClose}
+      />
     </Box>
   );
 };
