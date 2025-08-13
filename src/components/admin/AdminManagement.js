@@ -63,6 +63,12 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useRegisterMutation } from '../../store/api/authApi';
 import { useGetAllUsersQuery, useDeleteUserMutation } from '../../store/api/userApi';
 import StatsCardContainer from '../common/StatsCard';
+import EditUserModal from './EditUserModal';
+import { 
+  // ... your existing imports
+  useTheme, // Add this if not present
+} from '@mui/material';
+
 
 // Animations
 const float = keyframes`
@@ -112,32 +118,42 @@ const HeaderSection = styled(Box)(({ theme }) => ({
   },
 }));
 
-const StatsCard = styled(Card)(({ theme, gradient }) => ({
+// Replace the existing StatsCard styled component with this
+const StatsCard = styled(Card)(({ theme, color }) => ({
   borderRadius: 20,
-  background: gradient,
-  color: 'white',
+  background: `linear-gradient(135deg, ${color}10 0%, ${color}05 100%)`,
+  border: `1px solid ${color}20`,
   transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
   position: 'relative',
   overflow: 'hidden',
   cursor: 'pointer',
   '&:hover': {
     transform: 'translateY(-8px) scale(1.02)',
+    boxShadow: `0 20px 40px ${color}30`,
     animation: `${glow} 2s ease-in-out infinite`,
   },
   '&::before': {
     content: '""',
     position: 'absolute',
     top: 0,
-    left: '-100%',
-    width: '200%',
-    height: '100%',
-    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-    transition: 'left 0.5s',
-  },
-  '&:hover::before': {
-    left: '100%',
+    left: 0,
+    right: 0,
+    height: '4px',
+    background: `linear-gradient(90deg, ${color} 0%, ${color}80 100%)`,
   },
 }));
+
+// Add this new styled component for the icon
+const FloatingStatsIcon = styled(Avatar)(({ theme, color }) => ({
+  width: 60,
+  height: 60,
+  animation: `${float} 3s ease-in-out infinite`,
+  background: `${color}20`,
+  color: color,
+  border: `2px solid ${color}30`,
+  boxShadow: `0 8px 25px ${color}20`,
+}));
+
 
 const EnhancedDialog = styled(Dialog)(({ theme }) => ({
   '& .MuiDialog-paper': {
@@ -245,7 +261,7 @@ const AdminManagement = () => {
     role: 'ADMIN',
   });
   const [errors, setErrors] = useState({});
-  
+   const theme = useTheme();
   const { isSuperAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -254,6 +270,21 @@ const AdminManagement = () => {
     role: 'ADMIN',
   });
   const [deleteUser] = useDeleteUserMutation();
+  const [editModalOpen, setEditModalOpen] = useState(false);
+const [selectedUser, setSelectedUser] = useState(null);
+const handleEditUser = (user) => {
+  setSelectedUser(user);
+  setEditModalOpen(true);
+};
+
+const handleEditModalClose = () => {
+  setEditModalOpen(false);
+  setSelectedUser(null);
+};
+
+const handleUserUpdate = () => {
+  refetch(); // Refresh the users list
+};
 
   useEffect(() => {
     if (location.state?.openDialog) {
@@ -405,36 +436,37 @@ const AdminManagement = () => {
 
   const admins = usersData?.data || [];
 
-  const statsData = [
-    {
-      title: 'Total Admins',
-      value: admins.length,
-      icon: <SupervisorAccount sx={{ fontSize: 32 }} />,
-      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      description: 'Active administrators',
-    },
-    {
-      title: 'Filtered Results',
-      value: filteredAdmins.length,
-      icon: <Search sx={{ fontSize: 32 }} />,
-      gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-      description: searchTerm ? 'Matching search' : 'All admins shown',
-    },
-    {
-      title: 'Security Score',
-      value: '98%',
-      icon: <Security sx={{ fontSize: 32 }} />,
-      gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-      description: 'System security rating',
-    },
-    {
-      title: 'Performance',
-      value: '95%',
-      icon: <TrendingUp sx={{ fontSize: 32 }} />,
-      gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-      description: 'System performance',
-    },
-  ];
+const statsData = [
+  {
+    title: 'Total Admins',
+    value: admins.length,
+    description: 'Active administrators',
+    icon: Groups,
+    color: theme.palette.primary.main,
+  },
+  {
+    title: 'Filtered Results',
+    value: filteredAdmins.length,
+    description: searchTerm ? 'Matching search' : 'All admins shown',
+    icon: FilterList,
+    color: theme.palette.info.main,
+  },
+  {
+    title: 'Security Score',
+    value: '98%',
+    description: 'System security rating',
+    icon: Security,
+    color: theme.palette.success.main,
+  },
+  {
+    title: 'Performance',
+    value: '95%',
+    description: 'System performance',
+    icon: TrendingUp,
+    color: theme.palette.warning.main,
+  },
+];
+
 
   return (
     <Box>
@@ -521,42 +553,53 @@ const AdminManagement = () => {
 
       {/* Enhanced Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        {statsData.map((stat, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
-            <Slide in={true} timeout={600 + index * 200} direction="up">
-              <StatsCard gradient={stat.gradient}>
-                <CardContent sx={{ p: 3 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                    <Avatar
-                      sx={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                        color: 'white',
-                        width: 60,
-                        height: 60,
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      {stat.icon}
-                    </Avatar>
-                  </Box>
-                  
-                  <Typography variant="h3" sx={{ fontWeight: 800, mb: 1 }}>
-                    {stat.value}
+  {statsData.map((stat, index) => {
+    const Icon = stat.icon;
+    return (
+      <Grid item xs={12} sm={6} md={3} key={index}>
+        <Fade in timeout={300 + index * 100}>
+          <StatsCard color={stat.color}>
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <FloatingStatsIcon color={stat.color}>
+                  <Icon />
+                </FloatingStatsIcon>
+                <Box sx={{ ml: 2, flex: 1 }}>
+                  <Typography 
+                    variant="h4" 
+                    fontWeight="bold" 
+                    color={stat.color}
+                    sx={{ mb: 0.5 }}
+                  >
+                    {isLoadingUsers ? (
+                      <CircularProgress size={24} sx={{ color: stat.color }} />
+                    ) : (
+                      stat.value
+                    )}
                   </Typography>
-                  
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                    {stat.title}
-                  </Typography>
-                  
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    {stat.description}
-                  </Typography>
-                </CardContent>
-              </StatsCard>
-            </Slide>
-          </Grid>
-        ))}
+                </Box>
+              </Box>
+              <Typography 
+                variant="h6" 
+                fontWeight="600" 
+                sx={{ mb: 1, color: 'text.primary' }}
+              >
+                {stat.title}
+              </Typography>
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{ opacity: 0.8 }}
+              >
+                {stat.description}
+              </Typography>
+            </CardContent>
+          </StatsCard>
+        </Fade>
       </Grid>
+    );
+  })}
+</Grid>
 
       {/* Enhanced Admins Table with Search */}
       <Fade in={true} timeout={1000}>
@@ -825,18 +868,18 @@ const AdminManagement = () => {
                         <Box sx={{ display: 'flex', gap: 1 }}>
                           <Tooltip title="Edit Admin">
                             <IconButton
-                              size="small"
-                              sx={{
-                                color: 'primary.main',
-                                backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                                '&:hover': {
-                                  backgroundColor: 'rgba(99, 102, 241, 0.2)',
-                                  transform: 'scale(1.1)',
-                                },
-                              }}
-                            >
-                              <Edit />
-                            </IconButton>
+  onClick={() => handleEditUser(admin)}
+  sx={{
+    color: 'primary.main',
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    '&:hover': {
+      backgroundColor: 'rgba(99, 102, 241, 0.2)',
+      transform: 'scale(1.1)',
+    },
+  }}
+>
+  <Edit />
+</IconButton>
                           </Tooltip>
                           <Tooltip title="Delete Admin">
                             <IconButton
@@ -1304,6 +1347,14 @@ const AdminManagement = () => {
           <Add />
         </Fab>
       </Zoom>
+      {/* Edit User Modal */}
+<EditUserModal
+  open={editModalOpen}
+  onClose={handleEditModalClose}
+  user={selectedUser}
+  onUpdate={handleUserUpdate}
+/>
+
     </Box>
   );
 };

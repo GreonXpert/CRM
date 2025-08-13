@@ -20,6 +20,7 @@ import {
   Slide,
   IconButton,
   Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import { 
   Add, 
@@ -77,17 +78,48 @@ const HeaderSection = styled(Box)(({ theme }) => ({
   },
 }));
 
-const StatsCard = styled(Card)(({ theme, gradient }) => ({
+// Replace the existing StatsCard styled component with this
+const StatsCard = styled(Card)(({ theme, color }) => ({
   borderRadius: 20,
-  background: gradient,
-  color: 'white',
+  background: `linear-gradient(135deg, ${color}10 0%, ${color}05 100%)`,
+  border: `1px solid ${color}20`,
   transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+  position: 'relative',
+  overflow: 'hidden',
   cursor: 'pointer',
   '&:hover': {
     transform: 'translateY(-8px) scale(1.02)',
-    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.2)',
+    boxShadow: `0 20px 40px ${color}30`,
+    animation: `${glow} 2s ease-in-out infinite`,
+  },
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '4px',
+    background: `linear-gradient(90deg, ${color} 0%, ${color}80 100%)`,
   },
 }));
+
+// Add this new styled component for the floating icon
+const FloatingStatsIcon = styled(Avatar)(({ theme, color }) => ({
+  width: 60,
+  height: 60,
+  animation: `${float} 3s ease-in-out infinite`,
+  background: `${color}20`,
+  color: color,
+  border: `2px solid ${color}30`,
+  boxShadow: `0 8px 25px ${color}20`,
+}));
+
+// Add the glow animation
+const glow = keyframes`
+  0%, 100% { box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3); }
+  50% { box-shadow: 0 8px 40px rgba(99, 102, 241, 0.6); }
+`;
+
 
 const EnhancedDialog = styled(Dialog)(({ theme }) => ({
   '& .MuiDialog-paper': {
@@ -210,42 +242,39 @@ const LeadPage = () => {
 
   const leads = leadsData?.data || [];
   
- const statsData = React.useMemo(() => {
-   const makeGrad = (from, to, a = 0.95) =>
-     `linear-gradient(135deg, ${alpha(from, a)} 0%, ${alpha(to, a)} 100%)`;
-   const p = theme.palette;
+const statsData = React.useMemo(() => {
+  return [
+    {
+      title: 'Total Leads',
+      value: leads.length,
+      description: 'All leads in the system',
+      icon: People,
+      color: theme.palette.primary.main,
+    },
+    {
+      title: 'New Leads',
+      value: leads.filter(l => l.status === 'New').length,
+      description: 'Awaiting review',
+      icon: Timeline,
+      color: theme.palette.info.main,
+    },
+    {
+      title: 'Approved',
+      value: leads.filter(l => l.status === 'Approved').length,
+      description: 'Successfully converted',
+      icon: TrendingUp,
+      color: theme.palette.success.main,
+    },
+    {
+      title: 'Follow-up',
+      value: leads.filter(l => l.status === 'Follow-up').length,
+      description: 'Requires attention',
+      icon: Assessment,
+      color: theme.palette.warning.main,
+    },
+  ];
+}, [leads, theme]);
 
-   return [
-     {
-       title: 'Total Leads',
-       value: leads.length,
-       icon: <People sx={{ fontSize: 32 }} />,
-       // primary → secondary
-       gradient: makeGrad(p.primary.main, p.secondary.main),
-     },
-     {
-       title: 'New Leads',
-       value: leads.filter(l => l.status === 'New').length,
-       icon: <Timeline sx={{ fontSize: 32 }} />,
-       // soft info → primary for a clean blue blend
-       gradient: makeGrad(lighten(p.info.main, 0.05), p.primary.main),
-     },
-     {
-       title: 'Approved',
-       value: leads.filter(l => l.status === 'Approved').length,
-       icon: <TrendingUp sx={{ fontSize: 32 }} />,
-       // success tint → deeper success for solid approval feel
-       gradient: makeGrad(lighten(p.success.main, 0.08), darken(p.success.main, 0.06)),
-     },
-     {
-       title: 'Follow-up',
-       value: leads.filter(l => l.status === 'Follow-up').length,
-       icon: <Assessment sx={{ fontSize: 32 }} />,
-       // subtle amber range that stays “decent” and readable
-       gradient: makeGrad(lighten(p.warning.main, 0.05), darken(p.warning.main, 0.07)),
-     },
-   ];
- }, [leads, theme]);
 
   return (
     <Box>
@@ -337,43 +366,53 @@ const LeadPage = () => {
 
       {/* Enhanced Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        {statsData.map((stat, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
-            <Slide in={true} timeout={600 + index * 200} direction="up">
-              <StatsCard gradient={stat.gradient}>
-                <CardContent sx={{ p: 3 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                    <Avatar
-                      sx={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                        color: 'white',
-                        width: 60,
-                        height: 60,
-                        backdropFilter: 'blur(10px)',
-                      }}
-                    >
-                      {stat.icon}
-                    </Avatar>
-                  </Box>
-                  
-                  <Typography variant="h3" sx={{ fontWeight: 800, mb: 1 }}>
-                    {stat.value}
+  {statsData.map((stat, index) => {
+    const Icon = stat.icon;
+    return (
+      <Grid item xs={12} sm={6} md={3} key={index}>
+        <Fade in timeout={300 + index * 100}>
+          <StatsCard color={stat.color}>
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <FloatingStatsIcon color={stat.color}>
+                  <Icon />
+                </FloatingStatsIcon>
+                <Box sx={{ ml: 2, flex: 1 }}>
+                  <Typography 
+                    variant="h4" 
+                    fontWeight="bold" 
+                    color={stat.color}
+                    sx={{ mb: 0.5 }}
+                  >
+                    {isLoading ? (
+                      <CircularProgress size={24} sx={{ color: stat.color }} />
+                    ) : (
+                      stat.value
+                    )}
                   </Typography>
-                  
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                    {stat.title}
-                  </Typography>
-                  
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    {stat.description}
-                  </Typography>
-                </CardContent>
-              </StatsCard>
-            </Slide>
-          </Grid>
-        ))}
+                </Box>
+              </Box>
+              <Typography 
+                variant="h6" 
+                fontWeight="600" 
+                sx={{ mb: 1, color: 'text.primary' }}
+              >
+                {stat.title}
+              </Typography>
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{ opacity: 0.8 }}
+              >
+                {stat.description}
+              </Typography>
+            </CardContent>
+          </StatsCard>
+        </Fade>
       </Grid>
-
+    );
+  })}
+</Grid>
       {/* Enhanced Lead List Table */}
      <Fade in={true} timeout={1200}>
   <Box>
